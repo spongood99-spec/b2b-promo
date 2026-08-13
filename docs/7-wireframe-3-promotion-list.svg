@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="500" viewBox="0 0 900 500" font-family="Arial, sans-serif">
+  <rect x="0" y="0" width="900" height="500" fill="#ffffff" stroke="#333" stroke-width="2"/>
+
+  <!-- Header -->
+  <rect x="0" y="0" width="900" height="56" fill="#f4f4f4" stroke="#333" stroke-width="1"/>
+  <text x="20" y="34" font-size="16" font-weight="bold" fill="#222">CJ프레시웨이 프로모션 협업 앱</text>
+  <text x="330" y="34" font-size="14" fill="#333" text-decoration="underline">프로모션 목록</text>
+  <text x="420" y="34" font-size="14" fill="#666">캘린더</text>
+  <text x="650" y="34" font-size="13" fill="#666">ㅇㅇ식품 담당자님</text>
+  <rect x="800" y="16" width="80" height="24" fill="#ffffff" stroke="#999"/>
+  <text x="820" y="32" font-size="12" fill="#333">로그아웃</text>
+
+  <!-- Filter bar -->
+  <rect x="0" y="56" width="900" height="48" fill="#ffffff" stroke="#333" stroke-width="1"/>
+  <text x="20" y="86" font-size="13" fill="#333">상태 필터:</text>
+  <rect x="90" y="68" width="100" height="26" fill="#ffffff" stroke="#666"/>
+  <text x="100" y="86" font-size="12" fill="#333">전체 ▾</text>
+  <rect x="740" y="66" width="140" height="30" fill="#2f6fed" stroke="#2f6fed"/>
+  <text x="760" y="86" font-size="13" fill="#ffffff">+ 프로모션 등록</text>
+
+  <!-- Table header -->
+  <rect x="0" y="104" width="900" height="36" fill="#eaeaea" stroke="#333" stroke-width="1"/>
+  <text x="20" y="127" font-size="13" font-weight="bold" fill="#222">제목 / 대상 품목</text>
+  <text x="330" y="127" font-size="13" font-weight="bold" fill="#222">기간</text>
+  <text x="500" y="127" font-size="13" font-weight="bold" fill="#222">상태</text>
+  <text x="630" y="127" font-size="13" font-weight="bold" fill="#222">제안자(소속사)</text>
+
+  <!-- column separators -->
+  <line x1="310" y1="104" x2="310" y2="500" stroke="#ddd"/>
+  <line x1="470" y1="104" x2="470" y2="500" stroke="#ddd"/>
+  <line x1="600" y1="104" x2="600" y2="500" stroke="#ddd"/>
+
+  <!-- Rows -->
+  <g font-size="13" fill="#222">
+    <!-- row1 -->
+    <rect x="0" y="140" width="900" height="52" fill="#ffffff" stroke="#e5e5e5"/>
+    <text x="20" y="170" font-weight="bold">국물떡볶이 외 2건</text>
+    <text x="330" y="170">26.09.01 ~ 09.30</text>
+    <rect x="500" y="155" width="64" height="22" rx="10" fill="#fff3cd" stroke="#e0a800"/>
+    <text x="512" y="170" font-size="12">제안됨</text>
+    <text x="630" y="170">ㅇㅇ식품</text>
+
+    <!-- row2 -->
+    <rect x="0" y="192" width="900" height="52" fill="#fafafa" stroke="#e5e5e5"/>
+    <text x="20" y="222" font-weight="bold">냉동만두 1kg</text>
+    <text x="330" y="222">26.09.05 ~ 09.20</text>
+    <rect x="500" y="207" width="64" height="22" rx="10" fill="#d6e4ff" stroke="#2f6fed"/>
+    <text x="512" y="222" font-size="12">검토중</text>
+    <text x="630" y="222">ㅁㅁ푸드</text>
+
+    <!-- row3 -->
+    <rect x="0" y="244" width="900" height="52" fill="#ffffff" stroke="#e5e5e5"/>
+    <text x="20" y="274" font-weight="bold">즉석국 3종</text>
+    <text x="330" y="274">26.08.20 ~ 08.31</text>
+    <rect x="500" y="259" width="64" height="22" rx="10" fill="#d4f5e0" stroke="#2ea043"/>
+    <text x="512" y="274" font-size="12">승인됨</text>
+    <text x="630" y="274">ㅅㅅ상사</text>
+
+    <!-- row4 -->
+    <rect x="0" y="296" width="900" height="52" fill="#fafafa" stroke="#e5e5e5"/>
+    <text x="20" y="326" font-weight="bold">김치 5종</text>
+    <text x="330" y="326">26.07.01 ~ 07.31</text>
+    <rect x="500" y="311" width="64" height="22" rx="10" fill="#e5e5e5" stroke="#888"/>
+    <text x="512" y="326" font-size="12">종료</text>
+    <text x="630" y="326">ㅇㅇ식품</text>
+
+    <!-- row5 (ellipsis) -->
+    <rect x="0" y="348" width="900" height="40" fill="#ffffff" stroke="#e5e5e5"/>
+    <text x="440" y="373" fill="#999">...</text>
+  </g>
+
+  <!-- Footnotes -->
+  <text x="20" y="420" font-size="12" fill="#666">(*1) [+ 프로모션 등록] 버튼은 협력사 담당자에게만 노출됩니다.</text>
+  <text x="20" y="440" font-size="12" fill="#666">(*2) 협력사 담당자는 본인이 등록한 프로모션만, CJ프레시웨이 담당자는 전체(검토 대기 포함) 프로모션을 봅니다.</text>
+  <text x="20" y="460" font-size="12" fill="#999">행을 클릭하면 프로모션 상세 화면으로 이동합니다.</text>
+</svg>

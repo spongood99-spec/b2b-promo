@@ -45,3 +45,27 @@ sequenceDiagram
     S-->>C: 새 access token 재발급
     C->>S: 원래 요청 재시도
 ```
+
+## 3. 프론트엔드 컴포넌트 구조
+
+> `5-project-principle.md` 6장의 디렉토리 구조를 페이지/컴포넌트 관계로 표현한 것. 각 feature 화면이 어떤 훅(TanStack Query)과 공통 컴포넌트를 쓰는지만 보여준다.
+
+```mermaid
+flowchart TD
+    App["App.jsx<br/>(AppRouter)"]
+
+    App --> LoginPage["LoginPage / SignupPage<br/>(features/auth)"]
+    App --> PromotionListPage["PromotionListPage<br/>(features/promotions)"]
+    App --> PromotionDetailPage["PromotionDetailPage<br/>(features/promotions)"]
+    App --> CalendarPage["CalendarPage<br/>(features/calendar)"]
+
+    LoginPage -.->|useAuth| AuthStore["authStore<br/>(stores, Zustand)"]
+
+    PromotionListPage -.->|usePromotions| Common["공통 컴포넌트<br/>(components: Button, Modal 등)"]
+    PromotionDetailPage --> PromotionForm["PromotionForm<br/>(features/promotions)"]
+    PromotionDetailPage --> ChangeRequestForm["ChangeRequestForm<br/>(features/changeRequests)"]
+    PromotionDetailPage -.->|usePromotionMutations| Common
+    ChangeRequestForm -.->|useChangeRequests| Common
+
+    CalendarPage -.->|useCalendarPromotions| Common
+```
