@@ -1,0 +1,15 @@
+{
+  "name": "b2b-promo-backend",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --env-file=.env src/server.js",
+    "test": "node --env-file=.env --test"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0",
+    "cors": "^2.8.5"
+  }
+}

@@ -84,9 +84,9 @@ flowchart LR
 - **선행 Task**: DB-1
 - **작업 내용**: Express 앱 골격을 만든다. `5-project-principle.md` 7장 구조(`src/db/pool.js`, `src/middlewares/`, `src/routes/`, `src/controllers/`, `src/services/`, `app.js`, `server.js`)를 그대로 따른다. pg Pool 생성, 공통 에러 핸들러(`{ error: { code, message } }` 단일 포맷), CORS(credentials 허용) 설정 포함.
 - **완료 조건**
-  - [ ] `npm start`로 서버가 기동되고 헬스체크 요청이 200을 반환한다
-  - [ ] pool을 통해 DB 쿼리가 성공한다 (예: `SELECT 1`)
-  - [ ] 존재하지 않는 경로 요청 시 공통 에러 포맷 `{ error: { code, message } }`로 404가 반환된다
+  - [x] `npm start`로 서버가 기동되고 헬스체크 요청이 200을 반환한다
+  - [x] pool을 통해 DB 쿼리가 성공한다 (예: `SELECT 1`)
+  - [x] 존재하지 않는 경로 요청 시 공통 에러 포맷 `{ error: { code, message } }`로 404가 반환된다
 
 ### BE-2. 인증 API (FR-1)
 - **선행 Task**: BE-1
