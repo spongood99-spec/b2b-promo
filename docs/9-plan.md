@@ -64,17 +64,17 @@ flowchart LR
 - **선행 Task**: 없음
 - **작업 내용**: PostgreSQL 17 데이터베이스를 생성하고 `8-schema.sql`을 실행해 5개 테이블(users, promotions, items, promotion_items, change_requests)을 만든다. 접속 문자열을 `.env`의 `DATABASE_URL`로 관리하고 `.env.example`을 커밋한다.
 - **완료 조건**
-  - [ ] `8-schema.sql` 실행 시 오류 없이 5개 테이블이 생성된다
-  - [ ] `\d promotions`로 status CHECK 제약(7개 값)과 proposer_id/reviewer_id FK가 확인된다
-  - [ ] `.env`에 `DATABASE_URL`이 설정되고 `.env.example`이 저장소에 있다 (`.env`는 .gitignore 대상)
+  - [x] `8-schema.sql` 실행 시 오류 없이 5개 테이블이 생성된다
+  - [x] `\d promotions`로 status CHECK 제약(7개 값)과 proposer_id/reviewer_id FK가 확인된다
+  - [x] `.env`에 `DATABASE_URL`이 설정되고 `.env.example`이 저장소에 있다 (`.env`는 .gitignore 대상)
 
 ### DB-2. 시드 데이터 준비
 - **선행 Task**: DB-1
 - **작업 내용**: 개발/테스트용 계정과 샘플 프로모션을 넣는다. 협력사 담당자 2명(서로 다른 소속사), CJ프레시웨이 담당자 1명, 상태가 서로 다른 프로모션 3~4건(제안됨/승인됨/종료).
 - **완료 조건**
-  - [ ] 협력사 계정 2개, CJ프레시웨이 계정 1개가 users에 존재한다 (비밀번호는 해시 저장)
-  - [ ] 서로 다른 status를 가진 프로모션이 3건 이상 존재하고 promotion_items로 품목이 연결되어 있다
-  - [ ] 시드 스크립트를 반복 실행해도 중복 없이 초기화된다
+  - [x] 협력사 계정 2개, CJ프레시웨이 계정 1개가 users에 존재한다 (비밀번호는 해시 저장)
+  - [x] 서로 다른 status를 가진 프로모션이 3건 이상 존재하고 promotion_items로 품목이 연결되어 있다
+  - [x] 시드 스크립트를 반복 실행해도 중복 없이 초기화된다
 
 ---
 
