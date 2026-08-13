@@ -5,16 +5,56 @@
 
 ## Task 의존 관계 요약
 
-```
-DB-1 → DB-2
-  ↓
-BE-1 → BE-2 → BE-3 → BE-4 → BE-5 → BE-6 → BE-7 → (BE-8: P1)
-         ↓       ↓      ↓       ↓       ↓
-FE-1 → FE-2    FE-3   FE-4    FE-5    FE-6 → FE-7 → FE-8
+```mermaid
+flowchart LR
+    subgraph DB["데이터베이스"]
+        DB1[DB-1 스키마 적용]
+        DB2[DB-2 시드 데이터]
+    end
+
+    subgraph BE["백엔드"]
+        BE1[BE-1 셋업/공통인프라]
+        BE2[BE-2 인증 API]
+        BE3[BE-3 인증/권한 미들웨어]
+        BE4[BE-4 프로모션 등록·조회]
+        BE5[BE-5 상태 전이 API]
+        BE6[BE-6 변경요청 API]
+        BE7[BE-7 상태전이 단위테스트]
+        BE8["BE-8 재오픈/중복경고 (P1)"]
+    end
+
+    subgraph FE["프론트엔드"]
+        FE1[FE-1 셋업/API클라이언트]
+        FE2[FE-2 로그인/회원가입]
+        FE3[FE-3 프로모션 목록]
+        FE4[FE-4 프로모션 등록]
+        FE5[FE-5 프로모션 상세]
+        FE6[FE-6 변경요청 영역]
+        FE7[FE-7 캘린더]
+        FE8[FE-8 반응형 레이아웃]
+    end
+
+    DB1 --> DB2
+    DB1 --> BE1
+    BE1 --> BE2 --> BE3 --> BE4 --> BE5 --> BE6 --> BE7 --> BE8
+
+    FE1 --> FE2
+    BE2 --> FE2 --> FE3
+    BE4 --> FE3 --> FE4
+    BE4 --> FE4
+    BE5 --> FE5
+    FE4 --> FE5 --> FE6
+    BE6 --> FE6 --> FE7
+    BE4 --> FE7
+    FE7 --> FE8
+
+    classDef p1 stroke-dasharray: 4 3
+    class BE8 p1
 ```
 
 - 백엔드 API가 있어야 프론트 화면을 붙일 수 있으므로 FE-n은 대응하는 BE-n에 의존한다.
 - FE-1(프로젝트 셋업)은 BE와 무관하게 먼저 시작 가능하다.
+- 점선 테두리(BE-8)는 P1(여유 있을 때만 착수) 항목이다.
 
 ---
 

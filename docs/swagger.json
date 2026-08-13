@@ -1,0 +1,552 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CJ프레시웨이 프로모션 협업 앱 API",
+    "version": "1.0.0",
+    "description": "협력사(식자재 제조·공급사)와 CJ프레시웨이 간 프로모션 제안·검토·승인·변경요청·캘린더 조회를 위한 REST API. 인증은 JWT access token(Authorization 헤더) + refresh token(HttpOnly Secure 쿠키)을 사용한다."
+  },
+  "servers": [
+    { "url": "/api" }
+  ],
+  "tags": [
+    { "name": "Auth", "description": "회원가입/로그인/토큰 재발급" },
+    { "name": "Promotions", "description": "프로모션 등록/조회/상태 전이" },
+    { "name": "ChangeRequests", "description": "변경요청 등록/조회/반영 처리" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "로그인/재발급으로 받은 access token을 `Authorization: Bearer {token}` 헤더로 전달한다."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": { "type": "string", "example": "VALIDATION_ERROR" },
+              "message": { "type": "string", "example": "필수 항목이 누락되었습니다." }
+            }
+          }
+        }
+      },
+      "Role": {
+        "type": "string",
+        "enum": ["partner", "cj_freshway"],
+        "description": "partner=협력사, cj_freshway=CJ프레시웨이"
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "role": { "$ref": "#/components/schemas/Role" },
+          "company_name": { "type": "string", "example": "㈜대한식자재" },
+          "email": { "type": "string", "format": "email" }
+        }
+      },
+      "Item": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "냉동만두 1kg" },
+          "spec": { "type": "string", "nullable": true, "example": "1kg x 20개입" }
+        }
+      },
+      "PromotionStatus": {
+        "type": "string",
+        "enum": ["proposed", "in_review", "approved", "rejected", "active", "closed", "cancelled"],
+        "description": "제안됨/검토중/승인됨/반려됨/진행중/종료/취소됨"
+      },
+      "Promotion": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "proposer_id": { "type": "string", "format": "uuid", "description": "제안한 협력사 담당자(users.id)" },
+          "reviewer_id": { "type": "string", "format": "uuid", "nullable": true, "description": "검토·승인한 CJ프레시웨이 담당자(users.id)" },
+          "start_date": { "type": "string", "format": "date" },
+          "end_date": { "type": "string", "format": "date" },
+          "condition": { "type": "string", "description": "할인율/가격 조건/지원조건 등을 포함하는 조건 텍스트" },
+          "status": { "$ref": "#/components/schemas/PromotionStatus" },
+          "reject_reason": { "type": "string", "nullable": true },
+          "cancel_reason": { "type": "string", "nullable": true },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Item" }
+          },
+          "overlap_warning": {
+            "type": "boolean",
+            "description": "동일 대상품목 + 동일 공급사 기준 기간이 1일 이상 겹치는 다른 프로모션이 있을 때 true (EC-05, P1)"
+          }
+        }
+      },
+      "ChangeRequestApplyStatus": {
+        "type": "string",
+        "enum": ["pending", "applied", "rejected"],
+        "description": "대기/반영완료/반영거부"
+      },
+      "ChangeRequest": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "promotion_id": { "type": "string", "format": "uuid" },
+          "requester_id": { "type": "string", "format": "uuid", "description": "요청한 협력사 담당자(users.id)" },
+          "content": { "type": "string" },
+          "apply_status": { "$ref": "#/components/schemas/ChangeRequestApplyStatus" },
+          "is_post_approval_change": { "type": "boolean", "description": "승인 이후 등록된 변경요청인지 여부 (EC-03)" }
+        }
+      },
+      "SignupRequest": {
+        "type": "object",
+        "required": ["role", "company_name", "email", "password"],
+        "properties": {
+          "role": { "$ref": "#/components/schemas/Role" },
+          "company_name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "format": "password" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "format": "password" }
+        }
+      },
+      "AuthTokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string", "description": "JWT access token (단기 만료)" },
+          "user": { "$ref": "#/components/schemas/User" }
+        }
+      },
+      "ItemInput": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "spec": { "type": "string", "nullable": true }
+        }
+      },
+      "CreatePromotionRequest": {
+        "type": "object",
+        "required": ["start_date", "end_date", "condition", "items"],
+        "properties": {
+          "start_date": { "type": "string", "format": "date" },
+          "end_date": { "type": "string", "format": "date" },
+          "condition": { "type": "string" },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/components/schemas/ItemInput" }
+          }
+        }
+      },
+      "UpdatePromotionRequest": {
+        "type": "object",
+        "description": "수정 후 승인 시 변경할 필드만 전달한다. 전달된 필드는 승인과 동시에 반영된다.",
+        "properties": {
+          "start_date": { "type": "string", "format": "date" },
+          "end_date": { "type": "string", "format": "date" },
+          "condition": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ItemInput" }
+          }
+        }
+      },
+      "RejectPromotionRequest": {
+        "type": "object",
+        "required": ["reject_reason"],
+        "properties": {
+          "reject_reason": { "type": "string" }
+        }
+      },
+      "CancelPromotionRequest": {
+        "type": "object",
+        "required": ["cancel_reason"],
+        "properties": {
+          "cancel_reason": { "type": "string" }
+        }
+      },
+      "CreateChangeRequestRequest": {
+        "type": "object",
+        "required": ["content"],
+        "properties": {
+          "content": { "type": "string" }
+        }
+      },
+      "UpdateChangeRequestRequest": {
+        "type": "object",
+        "required": ["apply_status"],
+        "properties": {
+          "apply_status": {
+            "type": "string",
+            "enum": ["applied", "rejected"],
+            "description": "CJ프레시웨이의 반영 처리 결과"
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "요청 값 검증 실패",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "Unauthorized": {
+        "description": "인증 실패 또는 access token 누락/만료",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "Forbidden": {
+        "description": "역할 권한 없음",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "NotFound": {
+        "description": "리소스를 찾을 수 없음",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "Conflict": {
+        "description": "중복 데이터 또는 허용되지 않은 상태 전이",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      }
+    }
+  },
+  "paths": {
+    "/auth/signup": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "회원가입",
+        "description": "협력사/CJ프레시웨이 역할을 구분해 계정을 생성한다. 비밀번호는 서버에서 해시하여 저장한다.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SignupRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "회원가입 성공",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "로그인",
+        "description": "이메일/비밀번호로 로그인한다. 성공 시 access token은 응답 바디로, refresh token은 HttpOnly Secure 쿠키로 발급된다.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "로그인 성공",
+            "headers": {
+              "Set-Cookie": {
+                "description": "refresh token이 담긴 HttpOnly Secure 쿠키",
+                "schema": { "type": "string" }
+              }
+            },
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokenResponse" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "access token 재발급",
+        "description": "인증 방식: Authorization 헤더가 아닌, 로그인 시 발급된 HttpOnly Secure 쿠키의 refresh token으로 인증한다(서명·만료만 검증). 이 엔드포인트는 bearerAuth를 사용하지 않는다.",
+        "responses": {
+          "200": {
+            "description": "access token 재발급 성공",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthTokenResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/promotions": {
+      "post": {
+        "tags": ["Promotions"],
+        "summary": "프로모션 제안 등록",
+        "description": "협력사만 호출 가능. 기간/대상 품목/조건을 입력하면 status='proposed'로 등록되고 품목은 즉시 생성되어 연결된다.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreatePromotionRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "등록 성공",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Promotion" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      },
+      "get": {
+        "tags": ["Promotions"],
+        "summary": "프로모션 목록 조회",
+        "description": "협력사는 본인이 등록한 프로모션만, CJ프레시웨이는 전체 프로모션을 조회한다. status 필터와 기간(from/to) 조회를 지원하며, 기간 조회는 캘린더 화면(월/주/일)에서 사용한다.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "$ref": "#/components/schemas/PromotionStatus" },
+            "description": "상태 필터"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date" },
+            "description": "조회 시작일 (해당 기간과 겹치는 프로모션 조회, 캘린더용)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date" },
+            "description": "조회 종료일 (해당 기간과 겹치는 프로모션 조회, 캘린더용)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "조회 성공",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Promotion" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/promotions/{id}": {
+      "get": {
+        "tags": ["Promotions"],
+        "summary": "프로모션 상세 조회",
+        "description": "협력사/CJ프레시웨이 모두 조회 가능(협력사는 본인 프로모션에 한함).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "조회 성공",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Promotion" } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["Promotions"],
+        "summary": "프로모션 수정 후 승인",
+        "description": "CJ프레시웨이만 호출 가능. 기간/대상 품목/조건을 수정하면서 동시에 승인 처리한다(status='approved'로 전이).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdatePromotionRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "수정 후 승인 성공",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Promotion" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/promotions/{id}/approve": {
+      "patch": {
+        "tags": ["Promotions"],
+        "summary": "프로모션 승인",
+        "description": "CJ프레시웨이만 호출 가능. status를 'approved'로 전이하고 reviewer_id를 기록한다.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "승인 성공",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Promotion" } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/promotions/{id}/reject": {
+      "patch": {
+        "tags": ["Promotions"],
+        "summary": "프로모션 반려",
+        "description": "CJ프레시웨이만 호출 가능. reject_reason이 없으면 400을 반환하며, 입력 시 status를 'rejected'로 전이한다.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RejectPromotionRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "반려 성공",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Promotion" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/promotions/{id}/cancel": {
+      "patch": {
+        "tags": ["Promotions"],
+        "summary": "프로모션 취소",
+        "description": "CJ프레시웨이만 호출 가능(EC-04). cancel_reason이 없으면 400을 반환하며, 입력 시 status를 'cancelled'로 전이한다.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CancelPromotionRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "취소 성공",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Promotion" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/promotions/{id}/reopen": {
+      "patch": {
+        "tags": ["Promotions"],
+        "summary": "(P1) 프로모션 재오픈",
+        "description": "CJ프레시웨이만 호출 가능(EC-02). status가 'closed' 또는 'cancelled'인 경우에만 'in_review'로 되돌리며, 그 외 상태는 409를 반환한다.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "재오픈 성공",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Promotion" } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/promotions/{id}/change-requests": {
+      "post": {
+        "tags": ["ChangeRequests"],
+        "summary": "변경요청 등록",
+        "description": "협력사만 호출 가능. apply_status='pending'으로 등록되며, 대상 프로모션이 'approved' 이후 상태(approved/active/closed/cancelled)이면 is_post_approval_change=true로 기록된다(EC-03). 등록만으로는 프로모션 status가 변경되지 않는다.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "프로모션 id" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateChangeRequestRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "등록 성공",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChangeRequest" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "get": {
+        "tags": ["ChangeRequests"],
+        "summary": "변경요청 목록 조회",
+        "description": "협력사/CJ프레시웨이 모두 조회 가능. 해당 프로모션에 등록된 변경요청 이력을 반환한다.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "프로모션 id" }
+        ],
+        "responses": {
+          "200": {
+            "description": "조회 성공",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ChangeRequest" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/change-requests/{id}": {
+      "patch": {
+        "tags": ["ChangeRequests"],
+        "summary": "변경요청 반영 처리",
+        "description": "CJ프레시웨이만 호출 가능. apply_status를 'applied' 또는 'rejected'로 갱신한다.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "변경요청 id" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateChangeRequestRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "반영 처리 성공",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChangeRequest" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  }
+}
