@@ -68,8 +68,8 @@ UI (컴포넌트/페이지)
 
 ## 5. 설정 / 보안 / 운영 원칙
 
-- **환경변수**: `.env` 파일 하나로 관리(`DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `PORT` 등). 환경별 분리(dev/staging/prod)는 하지 않는다. `.env`는 `.gitignore`에 포함하고 `.env.example`만 커밋한다.
-- **JWT**: access token은 짧은 만료(예: 15분), refresh token은 김(예: 7일). access는 클라이언트 메모리(Zustand)에만, refresh는 HttpOnly Secure 쿠키. 서버는 서명/만료만 검증하며 블랙리스트·회전 이력은 관리하지 않는다(PRD 5장과 동일, MVP 범위 밖).
+- **환경변수**: `.env` 파일 하나로 관리(`DATABASE_URL`, `PORT`, `CORS_ORIGIN`, `NODE_ENV`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ACCESS_EXPIRES`, `JWT_REFRESH_EXPIRES` 등). 환경별 분리(dev/staging/prod)는 하지 않는다. `.env`는 `.gitignore`에 포함하고 `.env.example`만 커밋한다.
+- **JWT**: access token은 짧은 만료(기본 15분, `JWT_ACCESS_EXPIRES`로 조정 가능), refresh token은 김(기본 7일, `JWT_REFRESH_EXPIRES`로 조정 가능). access는 클라이언트 메모리(Zustand)에만, refresh는 HttpOnly Secure 쿠키. 서버는 서명/만료만 검증하며 블랙리스트·회전 이력은 관리하지 않는다(PRD 5장과 동일, MVP 범위 밖).
 - **DB 접속정보**: `DATABASE_URL` 환경변수 하나로 pg Pool을 생성한다. 커넥션 풀 설정도 기본값 위주로, 별도 튜닝은 하지 않는다.
 - **로깅**: `console.log`/`console.error` 수준의 최소 로깅으로 충분하다. 요청 진입 시 method+path, 에러 발생 시 스택트레이스 정도만 남긴다. 구조화 로깅(JSON), 분산 트레이싱, 로그 수집 인프라는 도입하지 않는다.
 - **배포**: 단일 서버(Node.js 프로세스 하나 + PostgreSQL 하나) 전제. 이중화, 로드밸런서, 오토스케일링, 캐시 레이어(Redis 등)는 만들지 않는다.
@@ -96,12 +96,12 @@ frontend/
         usePromotions.js   # 목록/상세 query
         usePromotionMutations.js  # 등록/승인/반려/취소/수정 mutation
       changeRequests/
-        ChangeRequestForm.jsx
+        ChangeRequestSection.jsx
         useChangeRequests.js
       calendar/
         CalendarPage.jsx
         useCalendarPromotions.js
-    components/          # 여러 feature에서 재사용하는 공통 UI (Button, Modal 등)
+    components/          # 여러 feature에서 재사용하는 공통 UI (AppHeader, StatusBadge, ProtectedRoute 등)
     routes/              # 라우팅 설정 (React Router 등)
       AppRouter.jsx
     App.jsx

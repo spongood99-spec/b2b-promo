@@ -1,0 +1,129 @@
+.promotion-detail-page {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--space-6);
+}
+
+.detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.detail-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.detail-label {
+  min-width: 80px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.detail-actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.ec01-notice {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-box {
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+  max-width: 400px;
+  width: 100%;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.modal-box textarea {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  padding: var(--space-3);
+  font-size: var(--text-base);
+  min-height: 100px;
+  width: 100%;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.cr-section {
+  margin-top: var(--space-6);
+}
+
+.cr-history {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cr-item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cr-item-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.cr-tag {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.cr-item-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.cr-item-status button {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 767px) {
+  .detail-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

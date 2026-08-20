@@ -55,7 +55,7 @@ erDiagram
 ## 테이블 설명
 
 - **users**: 도메인 정의서 3장의 사용자(User). 협력사/CJ프레시웨이 담당자를 `role`로 구분해 단일 테이블에 저장한다.
-- **promotions**: 도메인 정의서 3장의 프로모션(Promotion). 제안자(`proposer_id`)는 필수, 검토자(`reviewer_id`)는 검토/승인/반려 시점에 채워지므로 nullable이다.
+- **promotions**: 도메인 정의서 3장의 프로모션(Promotion). 제안자(`proposer_id`)는 필수, 검토자(`reviewer_id`)는 검토/승인/반려/취소 시점에 채워지므로 nullable이다.
 - **items**: 도메인 정의서 3장의 대상품목(Item). PRD FR-2에 따라 별도 CRUD 화면 없이 프로모션 등록 폼에서 즉시 생성된다.
 - **promotion_items**: 프로모션과 대상품목의 N:M 관계를 표현하는 연결 테이블(PRD 6장 실제 테이블명).
 - **change_requests**: 도메인 정의서 3장의 변경요청(ChangeRequest). `is_post_approval_change`로 EC-03(승인후변경) 여부를 구분한다.

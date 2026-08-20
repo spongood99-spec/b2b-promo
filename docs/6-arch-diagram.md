@@ -52,20 +52,22 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    App["App.jsx<br/>(AppRouter)"]
+    App["App.jsx<br/>(AppRouter, ProtectedRoute로 보호된 경로 가드)"]
 
     App --> LoginPage["LoginPage / SignupPage<br/>(features/auth)"]
     App --> PromotionListPage["PromotionListPage<br/>(features/promotions)"]
+    App --> PromotionForm["PromotionForm<br/>(features/promotions, /promotions/new 독립 라우트)"]
     App --> PromotionDetailPage["PromotionDetailPage<br/>(features/promotions)"]
     App --> CalendarPage["CalendarPage<br/>(features/calendar)"]
 
     LoginPage -.->|useAuth| AuthStore["authStore<br/>(stores, Zustand)"]
 
-    PromotionListPage -.->|usePromotions| Common["공통 컴포넌트<br/>(components: Button, Modal 등)"]
-    PromotionDetailPage --> PromotionForm["PromotionForm<br/>(features/promotions)"]
-    PromotionDetailPage --> ChangeRequestForm["ChangeRequestForm<br/>(features/changeRequests)"]
+    PromotionListPage -.->|usePromotions| Common["공통 컴포넌트<br/>(components: AppHeader, StatusBadge, ProtectedRoute)"]
+    PromotionDetailPage --> ChangeRequestSection["ChangeRequestSection<br/>(features/changeRequests, 상세 화면 하단부 섹션)"]
     PromotionDetailPage -.->|usePromotionMutations| Common
-    ChangeRequestForm -.->|useChangeRequests| Common
+    ChangeRequestSection -.->|useChangeRequests| Common
 
     CalendarPage -.->|useCalendarPromotions| Common
 ```
+
+> 참고: `PromotionForm`은 `PromotionDetailPage`의 자식 컴포넌트가 아니라 `/promotions/new`로 라우팅되는 별도 화면이다. `PromotionDetailPage`의 "수정 후 승인" 인라인 편집 모드는 `PromotionForm`을 재사용하지 않고 자체적으로 구현되어 있다(품목 추가/삭제 UI가 두 파일에 각각 존재).

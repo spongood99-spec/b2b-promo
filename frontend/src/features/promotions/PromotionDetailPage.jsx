@@ -1,0 +1,272 @@
+import { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { useAuthStore } from '../../stores/authStore';
+import { usePromotion } from './usePromotions';
+import {
+  useApprovePromotion,
+  useRejectPromotion,
+  useCancelPromotion,
+  useUpdateAndApprovePromotion,
+} from './usePromotionMutations';
+import { StatusBadge } from '../../components/StatusBadge';
+import { ChangeRequestSection } from '../changeRequests/ChangeRequestSection';
+import '../auth/AuthForm.css';
+import './PromotionForm.css';
+import './PromotionDetailPage.css';
+
+function formatDate(iso) {
+  return iso ? iso.slice(2, 10).replace(/-/g, '.') : '';
+}
+
+export function PromotionDetailPage() {
+  const { id } = useParams();
+  const user = useAuthStore((s) => s.user);
+  const query = usePromotion(id);
+  const promotion = query.data;
+
+  const [editMode, setEditMode] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [condition, setCondition] = useState('');
+  const [items, setItems] = useState([]);
+  const [itemName, setItemName] = useState('');
+  const [itemSpec, setItemSpec] = useState('');
+
+  const [modalType, setModalType] = useState(null); // null | 'reject' | 'cancel'
+  const [reasonText, setReasonText] = useState('');
+  const [actionError, setActionError] = useState(null);
+
+  const approveMutation = useApprovePromotion(id);
+  const rejectMutation = useRejectPromotion(id);
+  const cancelMutation = useCancelPromotion(id);
+  const updateAndApproveMutation = useUpdateAndApprovePromotion(id);
+
+  if (query.isLoading) return <p>불러오는 중...</p>;
+  if (query.isError) return <p>{query.error?.message}</p>;
+  if (!promotion) return null;
+
+  function enterEditMode() {
+    setStartDate(promotion.start_date?.slice(0, 10) ?? '');
+    setEndDate(promotion.end_date?.slice(0, 10) ?? '');
+    setCondition(promotion.condition);
+    setItems(promotion.items ?? []);
+    setEditMode(true);
+  }
+
+  function handleAddItem() {
+    if (!itemName.trim()) return;
+    setItems([...items, { name: itemName.trim(), spec: itemSpec.trim() || null }]);
+    setItemName('');
+    setItemSpec('');
+  }
+
+  function handleRemoveItem(index) {
+    setItems(items.filter((_, i) => i !== index));
+  }
+
+  function handleSaveAndApprove() {
+    setActionError(null);
+    updateAndApproveMutation.mutate(
+      { start_date: startDate, end_date: endDate, condition, items },
+      {
+        onSuccess: () => setEditMode(false),
+        onError: (err) => setActionError(err.message),
+      }
+    );
+  }
+
+  function handleApprove() {
+    setActionError(null);
+    approveMutation.mutate(undefined, {
+      onError: (err) => setActionError(err.message),
+    });
+  }
+
+  function handleConfirmModal() {
+    setActionError(null);
+    const mutation = modalType === 'reject' ? rejectMutation : cancelMutation;
+    mutation.mutate(reasonText, {
+      onSuccess: () => {
+        setModalType(null);
+        setReasonText('');
+      },
+      onError: (err) => setActionError(err.message),
+    });
+  }
+
+  const canReview = ['proposed', 'in_review'].includes(promotion.status);
+  const canCancel = ['approved', 'active'].includes(promotion.status);
+
+  return (
+    <div className="promotion-detail-page">
+      <h1>프로모션 상세</h1>
+
+      <div className="detail-info">
+        <div className="detail-row">
+          <span className="detail-label">상태</span>
+          <StatusBadge status={promotion.status} />
+        </div>
+        <div className="detail-row">
+          <span className="detail-label">제안자</span>
+          <span>{promotion.proposer_company_name}</span>
+        </div>
+
+        {editMode ? (
+          <>
+            <div className="form-field-row">
+              <div className="form-field">
+                <label>시작일</label>
+                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label>종료일</label>
+                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="form-field">
+              <label>대상 품목</label>
+              <div className="item-add-row">
+                <input
+                  type="text"
+                  placeholder="품목명"
+                  value={itemName}
+                  onChange={(e) => setItemName(e.target.value)}
+                />
+                <input
+                  type="text"
+                  placeholder="규격(선택)"
+                  value={itemSpec}
+                  onChange={(e) => setItemSpec(e.target.value)}
+                />
+                <button type="button" className="btn-primary" onClick={handleAddItem}>
+                  + 추가
+                </button>
+              </div>
+              <ul className="item-list">
+                {items.map((item, index) => (
+                  <li key={index}>
+                    <span>
+                      {item.name}
+                      {item.spec ? ` (${item.spec})` : ''}
+                    </span>
+                    <button type="button" onClick={() => handleRemoveItem(index)}>
+                      삭제
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="form-field">
+              <label>조건</label>
+              <textarea value={condition} onChange={(e) => setCondition(e.target.value)} />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="detail-row">
+              <span className="detail-label">기간</span>
+              <span>
+                {formatDate(promotion.start_date)}~{formatDate(promotion.end_date)}
+              </span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">대상 품목</span>
+              <span>{promotion.items?.map((i) => i.name).join(', ')}</span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">조건</span>
+              <span>{promotion.condition}</span>
+            </div>
+          </>
+        )}
+
+        <div className="detail-row">
+          <span className="detail-label">반려사유</span>
+          <span>{promotion.reject_reason ?? '-'}</span>
+        </div>
+        <div className="detail-row">
+          <span className="detail-label">취소사유</span>
+          <span>{promotion.cancel_reason ?? '-'}</span>
+        </div>
+      </div>
+
+      {actionError && <div className="form-error">{actionError}</div>}
+
+      <div className="detail-actions">
+        {user?.role === 'partner' ? (
+          <p className="ec01-notice">등록 후 직접 수정 불가 - 변경요청으로 안내</p>
+        ) : (
+          <>
+            {editMode && (
+              <>
+                <button type="button" className="btn-primary" onClick={handleSaveAndApprove}>
+                  저장 후 승인
+                </button>
+                <button type="button" className="btn-cancel" onClick={() => setEditMode(false)}>
+                  취소
+                </button>
+              </>
+            )}
+
+            {!editMode && canReview && (
+              <>
+                <button type="button" className="btn-primary" onClick={handleApprove}>
+                  승인
+                </button>
+                <button type="button" className="btn-cancel" onClick={enterEditMode}>
+                  수정 후 승인
+                </button>
+                <button type="button" className="btn-cancel" onClick={() => setModalType('reject')}>
+                  반려
+                </button>
+              </>
+            )}
+
+            {!editMode && canCancel && (
+              <button type="button" className="btn-cancel" onClick={() => setModalType('cancel')}>
+                취소
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
+      {modalType && (
+        <div className="modal-overlay">
+          <div className="modal-box">
+            <h2>{modalType === 'reject' ? '반려 사유' : '취소 사유'}</h2>
+            <textarea
+              value={reasonText}
+              onChange={(e) => setReasonText(e.target.value)}
+              placeholder="사유를 입력하세요"
+            />
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={!reasonText.trim()}
+                onClick={handleConfirmModal}
+              >
+                확인
+              </button>
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={() => {
+                  setModalType(null);
+                  setReasonText('');
+                }}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ChangeRequestSection promotionId={id} />
+    </div>
+  );
+}

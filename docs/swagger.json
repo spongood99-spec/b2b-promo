@@ -70,6 +70,7 @@
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "proposer_id": { "type": "string", "format": "uuid", "description": "제안한 협력사 담당자(users.id)" },
+          "proposer_company_name": { "type": "string", "description": "제안자 소속사명(users.company_name, 목록/상세 표시용 조인 필드)" },
           "reviewer_id": { "type": "string", "format": "uuid", "nullable": true, "description": "검토·승인한 CJ프레시웨이 담당자(users.id)" },
           "start_date": { "type": "string", "format": "date" },
           "end_date": { "type": "string", "format": "date" },
@@ -98,6 +99,7 @@
           "id": { "type": "string", "format": "uuid" },
           "promotion_id": { "type": "string", "format": "uuid" },
           "requester_id": { "type": "string", "format": "uuid", "description": "요청한 협력사 담당자(users.id)" },
+          "requester_company_name": { "type": "string", "description": "요청자 소속사명(users.company_name, GET 목록 조회 시에만 조인되어 포함됨)" },
           "content": { "type": "string" },
           "apply_status": { "$ref": "#/components/schemas/ChangeRequestApplyStatus" },
           "is_post_approval_change": { "type": "boolean", "description": "승인 이후 등록된 변경요청인지 여부 (EC-03)" }

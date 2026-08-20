@@ -135,32 +135,43 @@ async function listPromotions({ userId, role, status, from, to }) {
 
   if (role === 'partner') {
     params.push(userId);
-    conditions.push(`proposer_id = $${params.length}`);
+    conditions.push(`p.proposer_id = $${params.length}`);
   }
   if (status) {
     params.push(status);
-    conditions.push(`status = $${params.length}`);
+    conditions.push(`p.status = $${params.length}`);
   }
   if (from && to) {
     params.push(from, to);
-    conditions.push(`end_date >= $${params.length - 1} AND start_date <= $${params.length}`);
+    conditions.push(`p.end_date >= $${params.length - 1} AND p.start_date <= $${params.length}`);
   } else if (from) {
     params.push(from);
-    conditions.push(`end_date >= $${params.length}`);
+    conditions.push(`p.end_date >= $${params.length}`);
   } else if (to) {
     params.push(to);
-    conditions.push(`start_date <= $${params.length}`);
+    conditions.push(`p.start_date <= $${params.length}`);
   }
 
   const where = conditions.length ? ` WHERE ${conditions.join(' AND ')}` : '';
-  const result = await pool.query(`SELECT * FROM promotions${where}`, params);
+  const result = await pool.query(
+    `SELECT p.*, u.company_name AS proposer_company_name
+     FROM promotions p
+     JOIN users u ON u.id = p.proposer_id${where}`,
+    params
+  );
 
   // ponytail: N+1, 데이터가 많아지면 JOIN+집계로 교체
   return Promise.all(result.rows.map(fillItems));
 }
 
 async function getPromotionById({ id, userId, role }) {
-  const result = await pool.query('SELECT * FROM promotions WHERE id = $1', [id]);
+  const result = await pool.query(
+    `SELECT p.*, u.company_name AS proposer_company_name
+     FROM promotions p
+     JOIN users u ON u.id = p.proposer_id
+     WHERE p.id = $1`,
+    [id]
+  );
   const promotion = result.rows[0];
 
   if (!promotion) {

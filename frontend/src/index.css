@@ -1,0 +1,52 @@
+:root {
+  --color-primary: #ED6A2C;
+  --color-primary-hover: #D65A1F;
+  --color-primary-soft: #FDEDE3;
+
+  --color-bg: #FAF8F5;
+  --color-surface: #FFFFFF;
+  --color-border: #E5E1DB;
+  --color-text: #1A1A1A;
+  --color-text-muted: #6B6B6B;
+
+  --status-proposed: #6B7280;
+  --status-in_review: #ED6A2C;
+  --status-approved: #16A34A;
+  --status-rejected: #DC2626;
+  --status-active: #2563EB;
+  --status-closed: #6B7280;
+  --status-cancelled: #9CA3AF;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-xl: 24px;
+
+  --weight-medium: 500;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-input: 8px;
+  --radius-card: 12px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans, -apple-system, sans-serif);
+  margin: 0;
+}

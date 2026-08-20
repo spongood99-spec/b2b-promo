@@ -1,0 +1,35 @@
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
+import './AppHeader.css';
+
+export function AppHeader({ activeNav }) {
+  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+
+  function handleLogout() {
+    useAuthStore.getState().clearAuth();
+    navigate('/login');
+  }
+
+  return (
+    <header className="app-header">
+      <div className="app-logo">CJ프레시웨이 프로모션 협업 앱</div>
+      <nav className="app-nav">
+        <Link to="/" className={activeNav === 'list' ? 'app-nav-current' : ''}>
+          프로모션 목록
+        </Link>
+        <Link to="/calendar" className={activeNav === 'calendar' ? 'app-nav-current' : ''}>
+          캘린더
+        </Link>
+      </nav>
+      <div className="app-header-right">
+        <span className="app-user-info">
+          {user?.company_name} / {user?.email}
+        </span>
+        <button type="button" className="btn-logout" onClick={handleLogout}>
+          로그아웃
+        </button>
+      </div>
+    </header>
+  );
+}

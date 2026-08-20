@@ -46,7 +46,14 @@ async function listChangeRequestsByPromotion({ promotionId, userId, role }) {
   if (role === 'partner' && promoRes.rows[0].proposer_id !== userId) {
     throw forbiddenError('접근 권한이 없습니다');
   }
-  const res = await pool.query('SELECT * FROM change_requests WHERE promotion_id = $1', [promotionId]);
+  // ponytail: no created_at column, relies on insertion-order SELECT; add created_at + ORDER BY if this ever breaks
+  const res = await pool.query(
+    `SELECT cr.*, u.company_name AS requester_company_name
+     FROM change_requests cr
+     JOIN users u ON u.id = cr.requester_id
+     WHERE cr.promotion_id = $1`,
+    [promotionId]
+  );
   return res.rows;
 }
 
