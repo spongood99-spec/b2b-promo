@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('../../docs/swagger.json');
 const pool = require('./db/pool');
 const auth = require('./middlewares/auth');
 const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
@@ -18,6 +20,10 @@ app.use((req, res, next) => {
   console.log(req.method, req.path);
   next();
 });
+
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}
 
 app.get('/health', async (req, res, next) => {
   try {
