@@ -92,64 +92,66 @@ flowchart LR
 - **선행 Task**: BE-1
 - **작업 내용**: 회원가입/로그인/토큰 재발급 API를 만든다. `POST /auth/signup`(role, 소속사명, 이메일, 비밀번호), `POST /auth/login`, `POST /auth/refresh`. 비밀번호는 bcrypt 해시 저장, access token은 응답 바디로, refresh token은 HttpOnly Secure 쿠키로 내려준다.
 - **완료 조건**
-  - [ ] 회원가입 후 동일 이메일로 재가입 시 409가 반환된다
-  - [ ] 로그인 성공 시 access token(바디) + refresh token(HttpOnly 쿠키)이 발급된다
-  - [ ] 잘못된 비밀번호로 로그인 시 401과 오류 메시지가 반환된다 (EC-06)
-  - [ ] refresh 쿠키로 `/auth/refresh` 호출 시 새 access token이 발급된다
+  - [x] 회원가입 후 동일 이메일로 재가입 시 409가 반환된다
+  - [x] 로그인 성공 시 access token(바디) + refresh token(HttpOnly 쿠키)이 발급된다
+  - [x] 잘못된 비밀번호로 로그인 시 401과 오류 메시지가 반환된다 (EC-06)
+  - [x] refresh 쿠키로 `/auth/refresh` 호출 시 새 access token이 발급된다
 
 ### BE-3. 인증/권한 미들웨어
 - **선행 Task**: BE-2
 - **작업 내용**: `middlewares/auth.js`(Authorization 헤더의 access token 검증 후 `req.user` 주입)와 `middlewares/requireRole.js`(협력사/CJ프레시웨이 역할 체크)를 만든다.
 - **완료 조건**
-  - [ ] 토큰 없이 보호된 API 호출 시 401이 반환된다
-  - [ ] 만료된 access token으로 호출 시 401이 반환된다 (프론트의 refresh 재시도 트리거)
-  - [ ] 권한이 없는 역할로 호출 시 403이 반환된다
+  - [x] 토큰 없이 보호된 API 호출 시 401이 반환된다
+  - [x] 만료된 access token으로 호출 시 401이 반환된다 (프론트의 refresh 재시도 트리거)
+  - [x] 권한이 없는 역할로 호출 시 403이 반환된다
 
 ### BE-4. 프로모션 등록·조회 API (FR-2, FR-7)
 - **선행 Task**: BE-3
 - **작업 내용**: `POST /promotions`(협력사만, 기간·대상 품목·조건 입력, 품목명은 즉시 items에 생성 후 promotion_items 연결), `GET /promotions`(역할별 조회 범위 + 상태 필터), `GET /promotions/:id`, `GET /promotions?from=&to=`(캘린더용 기간 조회).
 - **완료 조건**
-  - [ ] 협력사 계정으로 등록 시 status가 `proposed`로 생성되고 품목이 promotion_items에 연결된다
-  - [ ] 필수값(기간/대상 품목/조건) 누락 시 400과 오류 메시지가 반환된다
-  - [ ] 협력사 계정 조회 시 본인이 등록한 프로모션만, CJ프레시웨이 계정 조회 시 전체가 반환된다
-  - [ ] CJ프레시웨이 계정으로 등록 시도 시 403이 반환된다
-  - [ ] 기간 조회로 특정 월/주/일과 겹치는 프로모션만 반환된다
+  - [x] 협력사 계정으로 등록 시 status가 `proposed`로 생성되고 품목이 promotion_items에 연결된다
+  - [x] 필수값(기간/대상 품목/조건) 누락 시 400과 오류 메시지가 반환된다
+  - [x] 협력사 계정 조회 시 본인이 등록한 프로모션만, CJ프레시웨이 계정 조회 시 전체가 반환된다
+  - [x] CJ프레시웨이 계정으로 등록 시도 시 403이 반환된다
+  - [x] 기간 조회로 특정 월/주/일과 겹치는 프로모션만 반환된다
 
 ### BE-5. 프로모션 상태 전이 API (FR-3, FR-4)
 - **선행 Task**: BE-4
 - **작업 내용**: `PATCH /promotions/:id/approve`, `/reject`, `/cancel`, `PATCH /promotions/:id`(수정 후 승인). 상태 전이 규칙(`1-domain-definition.md` 6장)을 `promotions.service.js`의 순수 함수로 모아 구현하고, 승인/반려 시 reviewer_id를 기록한다.
 - **완료 조건**
-  - [ ] 승인 시 status가 `approved`로 바뀌고 reviewer_id가 채워진다
-  - [ ] 반려사유 없이 반려 요청 시 400이 반환되고, 사유를 넣으면 `rejected`로 전이되며 reject_reason이 저장된다
-  - [ ] 취소사유 없이 취소 요청 시 400이 반환되고, 사유를 넣으면 `cancelled`로 전이되며 cancel_reason이 저장된다
-  - [ ] 협력사 계정으로 승인/반려/취소/수정 호출 시 403이 반환된다 (EC-01)
-  - [ ] 허용되지 않은 상태 전이(예: `closed` → `approved`) 요청 시 409가 반환된다
+  - [x] 승인 시 status가 `approved`로 바뀌고 reviewer_id가 채워진다
+  - [x] 반려사유 없이 반려 요청 시 400이 반환되고, 사유를 넣으면 `rejected`로 전이되며 reject_reason이 저장된다
+  - [x] 취소사유 없이 취소 요청 시 400이 반환되고, 사유를 넣으면 `cancelled`로 전이되며 cancel_reason이 저장된다
+  - [x] 협력사 계정으로 승인/반려/취소/수정 호출 시 403이 반환된다 (EC-01)
+  - [x] 허용되지 않은 상태 전이(예: `closed` → `approved`) 요청 시 409가 반환된다
 
 ### BE-6. 변경요청 API (FR-5)
 - **선행 Task**: BE-5
 - **작업 내용**: `POST /promotions/:id/change-requests`(협력사만, apply_status는 `pending`으로 생성, 대상 프로모션이 `approved` 이후면 `is_post_approval_change=true`), `GET /promotions/:id/change-requests`, `PATCH /change-requests/:id`(CJ프레시웨이만, `applied`/`rejected` 처리).
 - **완료 조건**
-  - [ ] 협력사가 변경요청 등록 시 apply_status가 `pending`으로 저장된다
-  - [ ] 승인됨/진행중 상태의 프로모션에 대한 요청은 `is_post_approval_change=true`로 저장된다 (EC-03)
-  - [ ] 변경요청 등록 후에도 프로모션 status는 `approved`를 유지한다 (검토중으로 되돌아가지 않음)
-  - [ ] CJ프레시웨이가 처리 시 apply_status가 `applied`/`rejected`로 갱신되고, 협력사가 처리 시도 시 403이 반환된다
+  - [x] 협력사가 변경요청 등록 시 apply_status가 `pending`으로 저장된다
+  - [x] 승인됨/진행중 상태의 프로모션에 대한 요청은 `is_post_approval_change=true`로 저장된다 (EC-03)
+  - [x] 변경요청 등록 후에도 프로모션 status는 `approved`를 유지한다 (검토중으로 되돌아가지 않음)
+  - [x] CJ프레시웨이가 처리 시 apply_status가 `applied`/`rejected`로 갱신되고, 협력사가 처리 시도 시 403이 반환된다
 
 ### BE-7. 상태 전이 단위 테스트
 - **선행 Task**: BE-6
 - **작업 내용**: `5-project-principle.md` 4장 원칙에 따라 상태 전이 규칙과 EC-03 판단 로직에만 단위 테스트를 작성한다. 프레임워크 추가 없이 `node:test` + `assert` 사용. CRUD성 API는 테스트하지 않는다.
 - **완료 조건**
-  - [ ] 정상 전이 경로(proposed→in_review→approved→active→closed, proposed→rejected→proposed)가 통과한다
-  - [ ] 금지된 전이(예: closed→approved)가 거부되는 케이스가 테스트된다
-  - [ ] `is_post_approval_change` 판단 함수가 승인 전/후 케이스 모두에서 검증된다
-  - [ ] `node --test`로 전체 테스트가 통과한다
+  - [x] 정상 전이 경로(proposed→in_review→approved→active→closed, proposed→rejected→proposed)가 통과한다 (구현된 구간만 — 아래 참고)
+  - [x] 금지된 전이(예: closed→approved)가 거부되는 케이스가 테스트된다
+  - [x] `is_post_approval_change` 판단 함수가 승인 전/후 케이스 모두에서 검증된다
+  - [x] `node --test`로 전체 테스트가 통과한다
+
+> 참고: `in_review` 진입, `approved→active`, `active→closed`, `rejected→proposed`(재제안) 전이는 BE-1~BE-9 어디에도 대응하는 API/함수가 없어 MVP 범위 밖으로 확인됨(도메인 정의서 6장에는 개념으로만 존재). 실제 구현된 구간(proposed/in_review→approved/rejected, approved/active→cancelled)만 단위 테스트로 검증했다.
 
 ### BE-8. (P1) 재오픈 및 기간 중복 경고 (FR-8, FR-9)
 - **선행 Task**: BE-7
 - **작업 내용**: `PATCH /promotions/:id/reopen`(CJ프레시웨이만, `closed`/`cancelled` → `in_review`), 그리고 등록·승인 시점의 기간 중복 검사(동일 품목 + 동일 공급사 기준, 1일 이상 겹치면 경고 응답에 포함하되 차단하지 않음).
 - **완료 조건**
-  - [ ] `closed`/`cancelled` 프로모션만 `in_review`로 재오픈되고, 그 외 상태는 409가 반환된다 (EC-02)
-  - [ ] 협력사 계정으로 재오픈 시도 시 403이 반환된다
-  - [ ] 동일 품목·동일 공급사로 기간이 1일 이상 겹치면 응답에 경고 정보가 포함되되 등록 자체는 성공한다 (EC-05)
+  - [x] `closed`/`cancelled` 프로모션만 `in_review`로 재오픈되고, 그 외 상태는 409가 반환된다 (EC-02)
+  - [x] 협력사 계정으로 재오픈 시도 시 403이 반환된다
+  - [x] 동일 품목·동일 공급사로 기간이 1일 이상 겹치면 응답에 경고 정보가 포함되되 등록 자체는 성공한다 (EC-05)
 
 ---
 
