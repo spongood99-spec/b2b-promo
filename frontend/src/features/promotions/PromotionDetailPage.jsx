@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { usePromotion } from './usePromotions';
 import {
@@ -20,6 +20,7 @@ function formatDate(iso) {
 
 export function PromotionDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const query = usePromotion(id);
   const promotion = query.data;
@@ -99,7 +100,13 @@ export function PromotionDetailPage() {
 
   return (
     <div className="promotion-detail-page">
-      <h1>프로모션 상세</h1>
+      <header className="app-header">
+        <div className="app-logo">CJ프레시웨이 프로모션 협업 앱</div>
+        <h1 style={{ flex: 1 }}>프로모션 상세</h1>
+        <button type="button" className="btn-cancel" onClick={() => navigate('/')}>
+          목록
+        </button>
+      </header>
 
       <div className="detail-info">
         <div className="detail-row">
