@@ -1,4 +1,5 @@
 const pool = require('../db/pool');
+const notificationsService = require('./notifications.service');
 
 const POST_APPROVAL_STATUSES = ['approved', 'active', 'closed', 'cancelled'];
 function isPostApprovalStatus(status) {
@@ -37,6 +38,14 @@ async function createChangeRequest({ promotionId, requesterId, content }) {
      VALUES ($1, $2, $3, $4) RETURNING *`,
     [promotionId, requesterId, content, isPostApproval]
   );
+
+  const requesterRes = await pool.query('SELECT company_name FROM users WHERE id = $1', [requesterId]);
+  await notificationsService.notifyAllCjFreshway({
+    promotionId,
+    type: 'new_change_request',
+    message: `${requesterRes.rows[0].company_name}에서 변경요청을 등록했습니다.`,
+  });
+
   return res.rows[0];
 }
 
@@ -67,7 +76,16 @@ async function updateChangeRequestStatus({ id, apply_status }) {
     [apply_status, id]
   );
   if (res.rows.length === 0) throw notFoundError('변경요청을 찾을 수 없습니다');
-  return res.rows[0];
+
+  const changeRequest = res.rows[0];
+  await notificationsService.notifyUser({
+    userId: changeRequest.requester_id,
+    promotionId: changeRequest.promotion_id,
+    type: apply_status === 'applied' ? 'change_request_applied' : 'change_request_rejected',
+    message: apply_status === 'applied' ? '변경요청이 반영완료되었습니다.' : '변경요청이 반영거부되었습니다.',
+  });
+
+  return changeRequest;
 }
 
 module.exports = {

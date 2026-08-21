@@ -102,4 +102,17 @@ async function reopen(req, res, next) {
   }
 }
 
-module.exports = { create, list, getById, approve, reject, cancel, updateAndApprove, reopen };
+async function resubmit(req, res, next) {
+  try {
+    const promotion = await promotionsService.resubmitPromotion({
+      id: req.params.id,
+      proposerId: req.user.id,
+      ...req.body,
+    });
+    res.status(200).json(promotion);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { create, list, getById, approve, reject, cancel, updateAndApprove, reopen, resubmit };

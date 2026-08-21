@@ -9,6 +9,7 @@ const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
 const authRoutes = require('./routes/auth.routes');
 const promotionsRoutes = require('./routes/promotions.routes');
 const { promotionScoped: changeRequestsScoped, topLevel: changeRequestsTop } = require('./routes/changeRequests.routes');
+const notificationsRoutes = require('./routes/notifications.routes');
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use('/auth', authRoutes);
 app.use('/promotions', promotionsRoutes);
 app.use('/promotions/:id/change-requests', auth, changeRequestsScoped);
 app.use('/change-requests', auth, changeRequestsTop);
+app.use('/notifications', auth, notificationsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

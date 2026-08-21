@@ -560,6 +560,76 @@
         }
       }
     },
+    "/promotions/{id}/resubmit": {
+      "patch": {
+        "tags": ["Promotions"],
+        "summary": "반려된 프로모션 수정 후 재제출 (2026-08-21 추가)",
+        "description": "협력사(제안자 본인)만 호출 가능. status가 'rejected'인 경우에만 기간/조건/품목을 수정해 'proposed'로 되돌리며, reject_reason은 초기화된다. 그 외 상태이거나 본인 프로모션이 아니면 각각 409/403을 반환한다.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreatePromotionRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "재제출 성공",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Promotion" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "내 알림 목록 조회 (2026-08-21 추가)",
+        "description": "로그인한 사용자에게 온 알림을 최신순으로 조회한다. 담당 MD 지정 기능이 없어 CJ프레시웨이용 알림(신규 프로모션 접수/재제출/신규 변경요청)은 전체 CJ프레시웨이 계정에 브로드캐스트된다.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 5, "maximum": 50 },
+            "description": "조회할 최대 개수"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "조회 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string", "format": "uuid" },
+                      "user_id": { "type": "string", "format": "uuid" },
+                      "promotion_id": { "type": "string", "format": "uuid", "nullable": true },
+                      "type": {
+                        "type": "string",
+                        "enum": ["new_promotion", "approved", "rejected", "resubmitted", "new_change_request", "change_request_applied", "change_request_rejected"]
+                      },
+                      "message": { "type": "string" },
+                      "created_at": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
     "/promotions/{id}/change-requests": {
       "post": {
         "tags": ["ChangeRequests"],

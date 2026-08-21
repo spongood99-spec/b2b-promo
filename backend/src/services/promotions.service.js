@@ -1,4 +1,5 @@
 const pool = require('../db/pool');
+const notificationsService = require('./notifications.service');
 
 function validationError(message) {
   const err = new Error(message);
@@ -21,16 +22,25 @@ function invalidTransition(message) {
   return err;
 }
 
+function forbiddenError(message) {
+  const err = new Error(message);
+  err.status = 403;
+  err.code = 'FORBIDDEN';
+  return err;
+}
+
 const APPROVABLE_FROM = ['proposed', 'in_review'];
 const REJECTABLE_FROM = ['proposed', 'in_review'];
 const CANCELLABLE_FROM = ['approved', 'active'];
 
 const REOPENABLE_FROM = ['closed', 'cancelled'];
+const RESUBMITTABLE_FROM = ['rejected'];
 
 function canApprove(status) { return APPROVABLE_FROM.includes(status); }
 function canReject(status) { return REJECTABLE_FROM.includes(status); }
 function canCancel(status) { return CANCELLABLE_FROM.includes(status); }
 function canReopen(status) { return REOPENABLE_FROM.includes(status); }
+function canResubmit(status) { return RESUBMITTABLE_FROM.includes(status); }
 
 function periodsOverlap(startA, endA, startB, endB) {
   return startA <= endB && endA >= startB;
@@ -124,6 +134,12 @@ async function createPromotion({ proposerId, start_date, end_date, condition, it
     itemNames: createdItems.map((item) => item.name),
     startDate: promotion.start_date,
     endDate: promotion.end_date,
+  });
+
+  await notificationsService.notifyAllCjFreshway({
+    promotionId: promotion.id,
+    type: 'new_promotion',
+    message: `${companyName}에서 새 프로모션을 등록했습니다.`,
   });
 
   return { ...promotion, items: createdItems, overlap_warning: overlapWarning };
@@ -245,6 +261,12 @@ async function approvePromotion({ id, reviewerId }) {
     "UPDATE promotions SET status='approved', reviewer_id=$1 WHERE id=$2 RETURNING *",
     [reviewerId, id]
   );
+  await notificationsService.notifyUser({
+    userId: promotion.proposer_id,
+    promotionId: id,
+    type: 'approved',
+    message: '프로모션이 승인되었습니다.',
+  });
   return withOverlapWarning(result.rows[0]);
 }
 
@@ -262,6 +284,12 @@ async function rejectPromotion({ id, reviewerId, reject_reason }) {
     "UPDATE promotions SET status='rejected', reviewer_id=$1, reject_reason=$2 WHERE id=$3 RETURNING *",
     [reviewerId, reject_reason, id]
   );
+  await notificationsService.notifyUser({
+    userId: promotion.proposer_id,
+    promotionId: id,
+    type: 'rejected',
+    message: `프로모션이 반려되었습니다. (사유: ${reject_reason})`,
+  });
   return fillItems(result.rows[0]);
 }
 
@@ -312,6 +340,12 @@ async function updateAndApprovePromotion({ id, reviewerId, start_date, end_date,
       `UPDATE promotions SET ${setClauses.join(', ')} WHERE id=$${params.length} RETURNING *`,
       params
     );
+    await notificationsService.notifyUser({
+      userId: promotion.proposer_id,
+      promotionId: id,
+      type: 'approved',
+      message: '수정된 내용으로 프로모션이 승인되었습니다.',
+    });
     return withOverlapWarning(result.rows[0]);
   }
 
@@ -360,6 +394,13 @@ async function updateAndApprovePromotion({ id, reviewerId, start_date, end_date,
     endDate: updatedPromotion.end_date,
   });
 
+  await notificationsService.notifyUser({
+    userId: updatedPromotion.proposer_id,
+    promotionId: id,
+    type: 'approved',
+    message: '수정된 내용으로 프로모션이 승인되었습니다.',
+  });
+
   return { ...updatedPromotion, items: createdItems, overlap_warning: overlapWarning };
 }
 
@@ -376,6 +417,75 @@ async function reopenPromotion({ id }) {
   return fillItems(result.rows[0]);
 }
 
+async function resubmitPromotion({ id, proposerId, start_date, end_date, condition, items }) {
+  const promotion = await findPromotionOrThrow(id);
+
+  if (promotion.proposer_id !== proposerId) {
+    throw forbiddenError('접근 권한이 없습니다');
+  }
+  if (!canResubmit(promotion.status)) {
+    throw invalidTransition(`현재 상태(${promotion.status})에서는 재제출할 수 없습니다`);
+  }
+  if (!start_date || !end_date || !condition || !Array.isArray(items) || items.length === 0) {
+    throw validationError('필수 항목이 누락되었습니다');
+  }
+
+  const client = await pool.connect();
+  let updatedPromotion;
+  let createdItems;
+  try {
+    await client.query('BEGIN');
+
+    const updateResult = await client.query(
+      `UPDATE promotions
+       SET start_date=$1, end_date=$2, condition=$3, status='proposed', reject_reason=NULL
+       WHERE id=$4 RETURNING *`,
+      [start_date, end_date, condition, id]
+    );
+    updatedPromotion = updateResult.rows[0];
+
+    await client.query('DELETE FROM promotion_items WHERE promotion_id=$1', [id]);
+
+    createdItems = [];
+    for (const item of items) {
+      const itemResult = await client.query(
+        'INSERT INTO items (name, spec) VALUES ($1,$2) RETURNING *',
+        [item.name, item.spec ?? null]
+      );
+      const createdItem = itemResult.rows[0];
+      createdItems.push(createdItem);
+      await client.query(
+        'INSERT INTO promotion_items (promotion_id, item_id) VALUES ($1,$2)',
+        [id, createdItem.id]
+      );
+    }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  const userResult = await pool.query('SELECT company_name FROM users WHERE id = $1', [proposerId]);
+  const overlapWarning = await checkOverlapWarning({
+    excludePromotionId: updatedPromotion.id,
+    companyName: userResult.rows[0].company_name,
+    itemNames: createdItems.map((item) => item.name),
+    startDate: updatedPromotion.start_date,
+    endDate: updatedPromotion.end_date,
+  });
+
+  await notificationsService.notifyAllCjFreshway({
+    promotionId: id,
+    type: 'resubmitted',
+    message: `${userResult.rows[0].company_name}에서 반려된 프로모션을 수정하여 재제출했습니다.`,
+  });
+
+  return { ...updatedPromotion, items: createdItems, overlap_warning: overlapWarning };
+}
+
 module.exports = {
   createPromotion,
   listPromotions,
@@ -385,10 +495,12 @@ module.exports = {
   cancelPromotion,
   updateAndApprovePromotion,
   reopenPromotion,
+  resubmitPromotion,
   canApprove,
   canReject,
   canCancel,
   canReopen,
+  canResubmit,
   periodsOverlap,
   checkOverlapWarning,
 };

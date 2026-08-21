@@ -13,5 +13,6 @@ router.patch('/:id/reject', requireRole('cj_freshway'), ctrl.reject);
 router.patch('/:id/cancel', requireRole('cj_freshway'), ctrl.cancel);
 router.patch('/:id', requireRole('cj_freshway'), ctrl.updateAndApprove);
 router.patch('/:id/reopen', requireRole('cj_freshway'), ctrl.reopen);
+router.patch('/:id/resubmit', requireRole('partner'), ctrl.resubmit);
 
 module.exports = router;

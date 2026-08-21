@@ -45,7 +45,17 @@ CREATE TABLE change_requests (
     is_post_approval_change  boolean NOT NULL DEFAULT false
 );
 
+CREATE TABLE notifications (
+    id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id       uuid NOT NULL REFERENCES users(id),
+    promotion_id  uuid REFERENCES promotions(id),
+    type          varchar(30) NOT NULL,
+    message       text NOT NULL,
+    created_at    timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE INDEX idx_promotions_proposer ON promotions(proposer_id);
 CREATE INDEX idx_promotions_reviewer ON promotions(reviewer_id);
 CREATE INDEX idx_promotion_items_item ON promotion_items(item_id);
 CREATE INDEX idx_change_requests_promotion ON change_requests(promotion_id);
+CREATE INDEX idx_notifications_user ON notifications(user_id, created_at DESC);

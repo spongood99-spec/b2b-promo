@@ -8,6 +8,7 @@ import {
   useCancelPromotion,
   useUpdateAndApprovePromotion,
   useReopenPromotion,
+  useResubmitPromotion,
 } from './usePromotionMutations';
 import { StatusBadge } from '../../components/StatusBadge';
 import { ChangeRequestSection } from '../changeRequests/ChangeRequestSection';
@@ -43,6 +44,7 @@ export function PromotionDetailPage() {
   const cancelMutation = useCancelPromotion(id);
   const updateAndApproveMutation = useUpdateAndApprovePromotion(id);
   const reopenMutation = useReopenPromotion(id);
+  const resubmitMutation = useResubmitPromotion(id);
 
   const header = (
     <header className="app-header">
@@ -122,6 +124,21 @@ export function PromotionDetailPage() {
     );
   }
 
+  function handleResubmit() {
+    setActionError(null);
+    if (items.length === 0) {
+      setActionError('대상 품목을 1개 이상 추가해야 합니다');
+      return;
+    }
+    resubmitMutation.mutate(
+      { start_date: startDate, end_date: endDate, condition, items },
+      {
+        onSuccess: () => setEditMode(false),
+        onError: (err) => setActionError(err.message),
+      }
+    );
+  }
+
   function handleApprove() {
     setActionError(null);
     approveMutation.mutate(undefined, {
@@ -144,6 +161,7 @@ export function PromotionDetailPage() {
   const canReview = ['proposed', 'in_review'].includes(promotion.status);
   const canCancel = ['approved', 'active'].includes(promotion.status);
   const canReopen = ['closed', 'cancelled'].includes(promotion.status);
+  const canResubmit = user?.role === 'partner' && promotion.status === 'rejected';
 
   function handleReopen() {
     setActionError(null);
@@ -251,7 +269,24 @@ export function PromotionDetailPage() {
 
       <div className="detail-actions">
         {user?.role === 'partner' ? (
-          <p className="ec01-notice">등록 후 직접 수정 불가 - 변경요청으로 안내</p>
+          canResubmit ? (
+            editMode ? (
+              <>
+                <button type="button" className="btn-primary" onClick={handleResubmit}>
+                  재제출
+                </button>
+                <button type="button" className="btn-cancel" onClick={handleCancelEdit}>
+                  편집 취소
+                </button>
+              </>
+            ) : (
+              <button type="button" className="btn-primary" onClick={enterEditMode}>
+                수정 후 재제출
+              </button>
+            )
+          ) : (
+            <p className="ec01-notice">등록 후 직접 수정 불가 - 변경요청으로 안내</p>
+          )
         ) : (
           <>
             {editMode && (

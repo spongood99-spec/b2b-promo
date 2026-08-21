@@ -78,3 +78,15 @@ export function useReopenPromotion(id) {
     },
   });
 }
+
+export function useResubmitPromotion(id) {
+  const queryClient = useQueryClient();
+  const addToast = useToastStore((s) => s.addToast);
+  return useMutation({
+    mutationFn: (payload) => apiClient.patch(`/promotions/${id}/resubmit`, payload),
+    onSuccess: () => {
+      invalidateBoth(queryClient, id);
+      addToast('프로모션이 재제출되었습니다.');
+    },
+  });
+}

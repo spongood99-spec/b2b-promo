@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { ChangePasswordModal } from './ChangePasswordModal';
+import { NotificationBell } from './NotificationBell';
 import './AppHeader.css';
 
 export function AppHeader({ activeNav }) {
@@ -29,6 +30,7 @@ export function AppHeader({ activeNav }) {
         <span className="app-user-info">
           {user?.company_name} / {user?.email}
         </span>
+        <NotificationBell />
         <button type="button" className="btn-logout" onClick={() => setShowChangePassword(true)}>
           비밀번호 변경
         </button>

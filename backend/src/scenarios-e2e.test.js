@@ -3,7 +3,8 @@ const assert = require('node:assert');
 const crypto = require('node:crypto');
 
 // docs/4-user-scenario.md 시나리오 1~6을 API 호출 흐름 그대로 재현하는 E2E 테스트.
-// 시나리오 3의 "반려됨 → 제안됨" 재제안 구간은 구현된 API가 없어(9-plan.md BE-7 참고) 제외한다.
+// 시나리오 3의 "반려됨 → 제안됨" 재제안 구간(PATCH /promotions/:id/resubmit)은
+// promotions-resubmit.test.js에서 별도로 검증한다(2026-08-21 구현, 9-plan.md BE-10 참고).
 
 let server;
 let baseUrl;
