@@ -31,6 +31,15 @@ export function PromotionForm() {
     setItems(items.filter((_, i) => i !== index));
   }
 
+  function handleCancel() {
+    const isDirty =
+      startDate || endDate || condition.trim() || items.length > 0 || itemName.trim() || itemSpec.trim();
+    if (isDirty && !window.confirm('작성 중인 내용이 사라집니다. 계속하시겠습니까?')) {
+      return;
+    }
+    navigate('/');
+  }
+
   function handleSubmit(e) {
     e.preventDefault();
     if (!startDate || !endDate || !condition.trim() || items.length === 0) {
@@ -51,7 +60,7 @@ export function PromotionForm() {
     <div className="promotion-form-page">
       <div className="promotion-form-header">
         <h1>프로모션 등록</h1>
-        <button type="button" className="btn-cancel" onClick={() => navigate('/')}>
+        <button type="button" className="btn-cancel" onClick={handleCancel}>
           취소
         </button>
       </div>

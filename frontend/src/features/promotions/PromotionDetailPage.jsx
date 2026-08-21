@@ -81,6 +81,23 @@ export function PromotionDetailPage() {
     setEditMode(true);
   }
 
+  function itemsEqual(a, b) {
+    const norm = (list) => list.map((i) => `${i.name}|${i.spec ?? ''}`).join(',');
+    return norm(a) === norm(b);
+  }
+
+  function handleCancelEdit() {
+    const isDirty =
+      startDate !== (promotion.start_date?.slice(0, 10) ?? '') ||
+      endDate !== (promotion.end_date?.slice(0, 10) ?? '') ||
+      condition !== promotion.condition ||
+      !itemsEqual(items, promotion.items ?? []);
+    if (isDirty && !window.confirm('편집 중인 내용이 사라집니다. 계속하시겠습니까?')) {
+      return;
+    }
+    setEditMode(false);
+  }
+
   function handleAddItem() {
     if (!itemName.trim()) return;
     setItems([...items, { name: itemName.trim(), spec: itemSpec.trim() || null }]);
@@ -232,7 +249,7 @@ export function PromotionDetailPage() {
                 <button type="button" className="btn-primary" onClick={handleSaveAndApprove}>
                   저장 후 승인
                 </button>
-                <button type="button" className="btn-cancel" onClick={() => setEditMode(false)}>
+                <button type="button" className="btn-cancel" onClick={handleCancelEdit}>
                   편집 취소
                 </button>
               </>
