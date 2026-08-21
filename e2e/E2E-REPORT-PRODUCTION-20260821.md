@@ -90,7 +90,9 @@
 - **현상**: 백엔드에는 `PATCH /promotions/:id/reopen`이 구현돼 있고(이전 라운드에서 curl로 정상 동작 확인됨), `종료`/`취소됨` 상태의 프로모션을 `검토중`으로 되돌릴 수 있다. 그런데 프론트엔드 상세 화면(`PromotionDetailPage.jsx`)에는 어떤 상태에서도 "재오픈" 버튼이 렌더링되지 않는다 — CJ프레시웨이 계정으로 `취소됨`/`종료` 상태 프로모션을 봐도 액션 영역이 완전히 비어있다(`prod-13-cancelled-no-reopen-ui.png`).
 - **근거 문서와의 관계**: `docs/9-plan.md`의 FE-5 완료조건 4개(EC-01 안내, 상태별 버튼, 반려/취소 사유, 수정후승인)에는 재오픈이 포함되지 않았고, FE-8(반응형)까지도 재오픈 UI는 어느 태스크의 완료조건에도 명시되지 않았다. 즉 계획 문서 기준으로는 "완료조건 미달"은 아니지만, `docs/2-prd.md` FR-8이 살아있는 기능 요구사항이고 백엔드가 이미 구현된 이상, 프론트에서 호출할 방법이 없다는 것은 사용자 관점에서 "종료/취소된 프로모션은 영원히 되돌릴 수 없다"와 동일한 결과를 낳는다.
 - **영향**: P1(우선순위 낮음, 시간 여유 있을 때 적용) 기능이라 MVP 출시를 막을 사안은 아니나, 실사용 시 CJ프레시웨이 담당자가 잘못 취소/종료 처리한 프로모션을 되돌릴 방법이 관리자 API 직접 호출 외에는 없다.
-- **제안**: `PromotionDetailPage.jsx`의 액션 영역에 `['closed', 'cancelled'].includes(promotion.status)`일 때 "재오픈" 버튼을 추가하고 `useReopenPromotion` mutation 하나만 `usePromotionMutations.js`에 추가하면 된다(반려/취소와 동일한 패턴, 새로운 컴포넌트 불필요). 착수 여부는 사용자 판단 필요.
+- **제안**: `PromotionDetailPage.jsx`의 액션 영역에 `['closed', 'cancelled'].includes(promotion.status)`일 때 "재오픈" 버튼을 추가하고 `useReopenPromotion` mutation 하나만 `usePromotionMutations.js`에 추가하면 된다(반려/취소와 동일한 패턴, 새로운 컴포넌트 불필요).
+
+**✅ 후속 조치 (2026-08-21, 이 리포트 작성 직후 처리 완료)**: 위 제안대로 재오픈 버튼을 추가해 배포했다. 프로덕션에서 실제로 `취소됨` 상태 프로모션에 재오픈 버튼이 노출되고, 클릭 시 `검토중`으로 전이되며 승인/수정후승인/반려 버튼이 다시 나타나는 것까지 확인했다 — `prod-16-reopen-success.png`.
 
 ---
 
