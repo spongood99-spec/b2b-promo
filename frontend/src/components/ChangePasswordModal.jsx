@@ -45,20 +45,27 @@ export function ChangePasswordModal({ onClose }) {
         <form onSubmit={handleSubmit} className="auth-form">
           {error && <div className="form-error">{error}</div>}
           <div className="form-field">
-            <label>현재 비밀번호</label>
+            <label htmlFor="current-password">현재 비밀번호</label>
             <input
+              id="current-password"
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
             />
           </div>
           <div className="form-field">
-            <label>새 비밀번호</label>
-            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            <label htmlFor="new-password">새 비밀번호</label>
+            <input
+              id="new-password"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
           </div>
           <div className="form-field">
-            <label>새 비밀번호 확인</label>
+            <label htmlFor="new-password-confirm">새 비밀번호 확인</label>
             <input
+              id="new-password-confirm"
               type="password"
               value={newPasswordConfirm}
               onChange={(e) => setNewPasswordConfirm(e.target.value)}
