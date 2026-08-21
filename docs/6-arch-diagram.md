@@ -1,6 +1,8 @@
 # 기술 아키텍처 다이어그램
 
-> 3일/1인 개발 MVP, 단일 서버 배포 전제. 실제 배포/실행 단위(React 클라이언트, Express 서버, PostgreSQL) 수준의 큰 흐름만 표현한다. 레이어 세부 구조(라우트/컨트롤러/서비스 등)는 `5-project-principle.md`를 참고.
+> 3일/1인 개발 MVP. 실제 배포/실행 단위(React 클라이언트, Express 서버, PostgreSQL) 수준의 큰 흐름만 표현한다. 레이어 세부 구조(라우트/컨트롤러/서비스 등)는 `5-project-principle.md`를 참고.
+>
+> **실제 운영 배포(2026-08-21)**: 단일 서버가 아니라 프론트엔드(`https://cjk-007-fe.vercel.app`)와 백엔드(`https://cjk-007-be.vercel.app`)가 각각 별도 Vercel 프로젝트로 분리 배포되어 있고, DB는 Supabase Postgres다. 두 서비스가 서로 다른 `*.vercel.app` 서브도메인(Public Suffix List상 서로 다른 "site")에 있어 브라우저가 크로스사이트로 취급하므로, refresh token 쿠키는 운영에서 `SameSite=None; Secure`, 로컬 개발(동일 origin)에서는 `SameSite=Lax`로 분기 처리한다 (`backend/src/controllers/auth.controller.js`).
 
 ## 1. 전체 구성도
 
@@ -36,6 +38,7 @@ sequenceDiagram
     DB-->>S: 사용자 정보
     S-->>C: access token(응답 바디) + refresh token(HttpOnly Secure 쿠키)
     Note over C: access token은 Zustand(메모리)에 저장
+    Note over S: 운영은 FE/BE가 서로 다른 vercel.app 서브도메인(크로스사이트)이라<br/>SameSite=None+Secure 필요, 로컬은 동일 origin이라 SameSite=Lax
 
     C->>S: API 요청 (Authorization: Bearer access token)
     S-->>C: 정상 응답
