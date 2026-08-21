@@ -75,6 +75,26 @@
   background: var(--color-primary-hover);
 }
 
+.btn-danger {
+  background: var(--status-rejected);
+  color: white;
+  border: none;
+  border-radius: var(--radius-input);
+  padding: var(--space-3);
+  font-size: var(--text-base);
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.btn-danger:hover {
+  background: #B91C1C;
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .auth-link {
   text-align: center;
   font-size: var(--text-sm);

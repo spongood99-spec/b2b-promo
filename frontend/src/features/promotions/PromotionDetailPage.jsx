@@ -306,7 +306,7 @@ export function PromotionDetailPage() {
             <div className="modal-actions">
               <button
                 type="button"
-                className="btn-primary"
+                className="btn-danger"
                 disabled={!reasonText.trim()}
                 onClick={handleConfirmModal}
               >

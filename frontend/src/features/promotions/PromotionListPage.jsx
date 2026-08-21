@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { usePromotions } from './usePromotions';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -90,7 +90,9 @@ export function PromotionListPage() {
 
       {query.isLoading && <p>불러오는 중...</p>}
       {query.isError && <p>{query.error?.message}</p>}
-      {query.isSuccess && query.data.length === 0 && <p>등록된 프로모션이 없습니다</p>}
+      {query.isSuccess && query.data.length === 0 && (
+        <p>{status ? '선택한 상태의 프로모션이 없습니다' : '등록된 프로모션이 없습니다'}</p>
+      )}
 
       {query.isSuccess && query.data.length > 0 && (
         <table className="promotion-table">
@@ -110,18 +112,28 @@ export function PromotionListPage() {
           </thead>
           <tbody>
             {sortPromotions(query.data, sortKey, sortDir).map((promotion) => (
-              <tr key={promotion.id} onClick={() => navigate(`/promotions/${promotion.id}`)}>
+              <tr key={promotion.id}>
                 <td>
-                  {promotion.items?.[0]?.name}
-                  {promotion.items?.length > 1 ? ` 외 ${promotion.items.length - 1}건` : ''}
+                  <Link className="row-link" to={`/promotions/${promotion.id}`}>
+                    {promotion.items?.[0]?.name}
+                    {promotion.items?.length > 1 ? ` 외 ${promotion.items.length - 1}건` : ''}
+                  </Link>
                 </td>
                 <td>
-                  {formatDate(promotion.start_date)}~{formatDate(promotion.end_date)}
+                  <Link className="row-link" to={`/promotions/${promotion.id}`}>
+                    {formatDate(promotion.start_date)}~{formatDate(promotion.end_date)}
+                  </Link>
                 </td>
                 <td>
-                  <StatusBadge status={promotion.status} />
+                  <Link className="row-link" to={`/promotions/${promotion.id}`}>
+                    <StatusBadge status={promotion.status} />
+                  </Link>
                 </td>
-                <td>{promotion.proposer_company_name ?? '-'}</td>
+                <td>
+                  <Link className="row-link" to={`/promotions/${promotion.id}`}>
+                    {promotion.proposer_company_name ?? '-'}
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>

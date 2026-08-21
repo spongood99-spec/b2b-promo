@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AppRouter } from './routes/AppRouter';
 import { doRefresh } from './api/client';
+import { Toast } from './components/Toast';
 
 function App() {
   const [bootstrapped, setBootstrapped] = useState(false);
@@ -11,7 +12,12 @@ function App() {
 
   if (!bootstrapped) return null;
 
-  return <AppRouter />;
+  return (
+    <>
+      <AppRouter />
+      <Toast />
+    </>
+  );
 }
 
 export default App;

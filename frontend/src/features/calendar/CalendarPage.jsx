@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { AppHeader } from '../../components/AppHeader';
 import { useCalendarPromotions } from './useCalendarPromotions';
 import './CalendarPage.css';
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
+const CANCELLED_STATUSES = ['cancelled', 'rejected'];
+const MAX_VISIBLE_PER_DAY = 3;
 
 function toISO(date) {
   const y = date.getFullYear();
@@ -55,14 +57,15 @@ function formatLabel(anchor, view) {
 export function CalendarPage() {
   const [view, setView] = useState('month');
   const [anchor, setAnchor] = useState(new Date());
-  const navigate = useNavigate();
 
   const { from, to, days } = getRange(anchor, view);
   const query = useCalendarPromotions(from, to);
 
   const promotionsByDay = (day) => {
     const iso = toISO(day);
-    return (query.data ?? []).filter((p) => p.start_date <= iso && p.end_date >= iso);
+    return (query.data ?? []).filter(
+      (p) => p.start_date <= iso && p.end_date >= iso && !CANCELLED_STATUSES.includes(p.status)
+    );
   };
 
   return (
@@ -97,20 +100,22 @@ export function CalendarPage() {
           {view === 'month' && WEEKDAY_LABELS.map((w) => (
             <div key={w} className="calendar-weekday-label">{w}</div>
           ))}
-          {days.map((day) => (
-            <div key={toISO(day)} className="calendar-day">
-              <div className="calendar-day-number">{day.getDate()}</div>
-              {promotionsByDay(day).map((p) => (
-                <div
-                  key={p.id}
-                  className="calendar-promo-item"
-                  onClick={() => navigate(`/promotions/${p.id}`)}
-                >
-                  {p.items?.[0]?.name ?? p.condition}
-                </div>
-              ))}
-            </div>
-          ))}
+          {days.map((day) => {
+            const dayPromotions = promotionsByDay(day);
+            const visible = dayPromotions.slice(0, MAX_VISIBLE_PER_DAY);
+            const hiddenCount = dayPromotions.length - visible.length;
+            return (
+              <div key={toISO(day)} className="calendar-day">
+                <div className="calendar-day-number">{day.getDate()}</div>
+                {visible.map((p) => (
+                  <Link key={p.id} className="calendar-promo-item" to={`/promotions/${p.id}`}>
+                    {p.items?.[0]?.name ?? p.condition}
+                  </Link>
+                ))}
+                {hiddenCount > 0 && <div className="calendar-promo-more">+{hiddenCount}건 더</div>}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
