@@ -17,15 +17,48 @@ const STATUS_OPTIONS = [
   ['cancelled', '취소됨'],
 ];
 
+const STATUS_ORDER = ['proposed', 'in_review', 'approved', 'rejected', 'active', 'closed', 'cancelled'];
+
+const COLUMNS = [
+  { key: 'title', label: '제목/품목', getValue: (p) => p.items?.[0]?.name ?? '' },
+  { key: 'period', label: '기간', getValue: (p) => p.start_date ?? '' },
+  { key: 'status', label: '상태', getValue: (p) => STATUS_ORDER.indexOf(p.status) },
+  { key: 'proposer', label: '제안자(소속사)', getValue: (p) => p.proposer_company_name ?? '' },
+];
+
 function formatDate(iso) {
   return iso ? iso.slice(2, 10).replace(/-/g, '.') : '';
 }
 
+function sortPromotions(promotions, sortKey, sortDir) {
+  if (!sortKey) return promotions;
+  const column = COLUMNS.find((c) => c.key === sortKey);
+  const sorted = [...promotions].sort((a, b) => {
+    const va = column.getValue(a);
+    const vb = column.getValue(b);
+    if (va < vb) return -1;
+    if (va > vb) return 1;
+    return 0;
+  });
+  return sortDir === 'desc' ? sorted.reverse() : sorted;
+}
+
 export function PromotionListPage() {
   const [status, setStatus] = useState('');
+  const [sortKey, setSortKey] = useState(null);
+  const [sortDir, setSortDir] = useState('asc');
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const query = usePromotions(status);
+
+  function handleSort(key) {
+    if (sortKey === key) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }
 
   return (
     <div className="promotion-list-page">
@@ -63,14 +96,20 @@ export function PromotionListPage() {
         <table className="promotion-table">
           <thead>
             <tr>
-              <th>제목/품목</th>
-              <th>기간</th>
-              <th>상태</th>
-              <th>제안자(소속사)</th>
+              {COLUMNS.map((column) => (
+                <th
+                  key={column.key}
+                  className="sortable-th"
+                  onClick={() => handleSort(column.key)}
+                >
+                  {column.label}
+                  {sortKey === column.key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {query.data.map((promotion) => (
+            {sortPromotions(query.data, sortKey, sortDir).map((promotion) => (
               <tr key={promotion.id} onClick={() => navigate(`/promotions/${promotion.id}`)}>
                 <td>
                   {promotion.items?.[0]?.name}

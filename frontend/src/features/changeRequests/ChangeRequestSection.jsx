@@ -3,6 +3,13 @@ import { useAuthStore } from '../../stores/authStore';
 import { useChangeRequests, useCreateChangeRequest, useUpdateChangeRequestStatus } from './useChangeRequests';
 
 const APPLY_STATUS_LABELS = { pending: '대기', applied: '반영완료', rejected: '반영거부' };
+const APPLY_STATUS_ORDER = ['pending', 'applied', 'rejected'];
+
+const CR_SORT_OPTIONS = [
+  { key: 'default', label: '등록순' },
+  { key: 'requester', label: '요청자', getValue: (cr) => cr.requester_company_name ?? '' },
+  { key: 'status', label: '반영여부', getValue: (cr) => APPLY_STATUS_ORDER.indexOf(cr.apply_status) },
+];
 
 export function ChangeRequestSection({ promotionId }) {
   const user = useAuthStore((s) => s.user);
@@ -11,6 +18,17 @@ export function ChangeRequestSection({ promotionId }) {
   const updateMutation = useUpdateChangeRequestStatus(promotionId);
   const [content, setContent] = useState('');
   const [error, setError] = useState(null);
+  const [sortKey, setSortKey] = useState('default');
+  const [sortDir, setSortDir] = useState('asc');
+
+  function handleSort(key) {
+    if (sortKey === key) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -30,8 +48,22 @@ export function ChangeRequestSection({ promotionId }) {
   if (query.isLoading) return <p>변경요청 이력을 불러오는 중...</p>;
   if (query.isError) return <p>{query.error?.message}</p>;
 
-  // ponytail: no created_at column, relies on insertion-order SELECT — reverse assumes DB returns oldest-first
-  const history = [...(query.data ?? [])].reverse();
+  // ponytail: no created_at column, relies on insertion-order SELECT — reverse assumes DB returns oldest-first (default sort)
+  const baseHistory = [...(query.data ?? [])].reverse();
+  const sortOption = CR_SORT_OPTIONS.find((o) => o.key === sortKey);
+  const history =
+    sortKey === 'default'
+      ? baseHistory
+      : (() => {
+          const sorted = [...baseHistory].sort((a, b) => {
+            const va = sortOption.getValue(a);
+            const vb = sortOption.getValue(b);
+            if (va < vb) return -1;
+            if (va > vb) return 1;
+            return 0;
+          });
+          return sortDir === 'desc' ? sorted.reverse() : sorted;
+        })();
 
   return (
     <div className="cr-section">
@@ -51,6 +83,20 @@ export function ChangeRequestSection({ promotionId }) {
       )}
 
       {user?.role !== 'partner' && error && <div className="form-error">{error}</div>}
+
+      <div className="cr-sort-bar">
+        {CR_SORT_OPTIONS.map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            className="cr-sort-btn"
+            onClick={() => handleSort(option.key)}
+          >
+            {option.label}
+            {sortKey === option.key && option.key !== 'default' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+          </button>
+        ))}
+      </div>
 
       <ul className="cr-history">
         {history.map((cr) => (
