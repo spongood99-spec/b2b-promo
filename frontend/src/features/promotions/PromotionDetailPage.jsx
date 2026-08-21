@@ -212,7 +212,7 @@ export function PromotionDetailPage() {
                   저장 후 승인
                 </button>
                 <button type="button" className="btn-cancel" onClick={() => setEditMode(false)}>
-                  취소
+                  편집 취소
                 </button>
               </>
             )}
@@ -233,7 +233,7 @@ export function PromotionDetailPage() {
 
             {!editMode && canCancel && (
               <button type="button" className="btn-cancel" onClick={() => setModalType('cancel')}>
-                취소
+                프로모션 취소
               </button>
             )}
           </>
@@ -243,7 +243,7 @@ export function PromotionDetailPage() {
       {modalType && (
         <div className="modal-overlay">
           <div className="modal-box">
-            <h2>{modalType === 'reject' ? '반려 사유' : '취소 사유'}</h2>
+            <h2>{modalType === 'reject' ? '반려 사유' : '프로모션 취소 사유'}</h2>
             <textarea
               value={reasonText}
               onChange={(e) => setReasonText(e.target.value)}
