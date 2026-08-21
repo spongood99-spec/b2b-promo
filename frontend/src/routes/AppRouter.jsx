@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { LoginPage } from '../features/auth/LoginPage';
 import { SignupPage } from '../features/auth/SignupPage';
 import { PromotionListPage } from '../features/promotions/PromotionListPage';
@@ -6,6 +6,15 @@ import { PromotionDetailPage } from '../features/promotions/PromotionDetailPage'
 import { PromotionForm } from '../features/promotions/PromotionForm';
 import { CalendarPage } from '../features/calendar/CalendarPage';
 import { ProtectedRoute } from '../components/ProtectedRoute';
+
+function NotFoundPage() {
+  return (
+    <div style={{ padding: 'var(--space-6)' }}>
+      <p>존재하지 않는 페이지입니다.</p>
+      <Link to="/">목록으로 돌아가기</Link>
+    </div>
+  );
+}
 
 export function AppRouter() {
   return (
@@ -45,6 +54,7 @@ export function AppRouter() {
             </ProtectedRoute>
           }
         />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

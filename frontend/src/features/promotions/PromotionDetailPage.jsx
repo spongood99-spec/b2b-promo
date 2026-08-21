@@ -42,9 +42,36 @@ export function PromotionDetailPage() {
   const cancelMutation = useCancelPromotion(id);
   const updateAndApproveMutation = useUpdateAndApprovePromotion(id);
 
-  if (query.isLoading) return <p>불러오는 중...</p>;
-  if (query.isError) return <p>{query.error?.message}</p>;
-  if (!promotion) return null;
+  const header = (
+    <header className="app-header">
+      <div className="app-logo">CJ프레시웨이 프로모션 협업 앱</div>
+      <h1 style={{ flex: 1 }}>프로모션 상세</h1>
+      <button type="button" className="btn-cancel" onClick={() => navigate('/')}>
+        목록
+      </button>
+    </header>
+  );
+
+  if (query.isLoading) {
+    return (
+      <div className="promotion-detail-page">
+        {header}
+        <p>불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (query.isError || !promotion) {
+    return (
+      <div className="promotion-detail-page">
+        {header}
+        <p>{query.error?.message ?? '프로모션을 찾을 수 없습니다'}</p>
+        <button type="button" className="btn-primary" onClick={() => navigate('/')}>
+          목록으로 돌아가기
+        </button>
+      </div>
+    );
+  }
 
   function enterEditMode() {
     setStartDate(promotion.start_date?.slice(0, 10) ?? '');
@@ -100,13 +127,7 @@ export function PromotionDetailPage() {
 
   return (
     <div className="promotion-detail-page">
-      <header className="app-header">
-        <div className="app-logo">CJ프레시웨이 프로모션 협업 앱</div>
-        <h1 style={{ flex: 1 }}>프로모션 상세</h1>
-        <button type="button" className="btn-cancel" onClick={() => navigate('/')}>
-          목록
-        </button>
-      </header>
+      {header}
 
       <div className="detail-info">
         <div className="detail-row">
