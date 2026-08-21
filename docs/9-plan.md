@@ -238,4 +238,4 @@ flowchart LR
 | Day 3 | FE-7, FE-8, 통합 점검(`4-user-scenario.md` 시나리오 1~6 수동 확인), 여유 시 BE-8 |
 
 - Day 1의 인증(BE-2·BE-3·FE-1의 refresh 인터셉터)이 가장 큰 리스크 구간이다. 여기서 지연되면 BE-8(P1)을 먼저 포기한다.
-- Day 3의 통합 점검은 자동화 없이 `4-user-scenario.md`의 시나리오 6개를 수동으로 훑는 것으로 대체한다 (`5-project-principle.md` 4장).
+- Day 3의 통합 점검은 자동화 없이 `4-user-scenario.md`의 시나리오 6개를 수동으로 훑는 것으로 대체한다 (`5-project-principle.md` 4장). 실행 결과는 `e2e/E2E-REPORT.md`에 기록되어 있다(시나리오 1~6 + 예외/엣지케이스 8종, 스크린샷 포함).
