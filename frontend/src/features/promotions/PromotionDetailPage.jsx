@@ -7,6 +7,7 @@ import {
   useRejectPromotion,
   useCancelPromotion,
   useUpdateAndApprovePromotion,
+  useReopenPromotion,
 } from './usePromotionMutations';
 import { StatusBadge } from '../../components/StatusBadge';
 import { ChangeRequestSection } from '../changeRequests/ChangeRequestSection';
@@ -41,6 +42,7 @@ export function PromotionDetailPage() {
   const rejectMutation = useRejectPromotion(id);
   const cancelMutation = useCancelPromotion(id);
   const updateAndApproveMutation = useUpdateAndApprovePromotion(id);
+  const reopenMutation = useReopenPromotion(id);
 
   const header = (
     <header className="app-header">
@@ -141,6 +143,14 @@ export function PromotionDetailPage() {
 
   const canReview = ['proposed', 'in_review'].includes(promotion.status);
   const canCancel = ['approved', 'active'].includes(promotion.status);
+  const canReopen = ['closed', 'cancelled'].includes(promotion.status);
+
+  function handleReopen() {
+    setActionError(null);
+    reopenMutation.mutate(undefined, {
+      onError: (err) => setActionError(err.message),
+    });
+  }
 
   return (
     <div className="promotion-detail-page">
@@ -272,6 +282,12 @@ export function PromotionDetailPage() {
             {!editMode && canCancel && (
               <button type="button" className="btn-cancel" onClick={() => setModalType('cancel')}>
                 프로모션 취소
+              </button>
+            )}
+
+            {!editMode && canReopen && (
+              <button type="button" className="btn-primary" onClick={handleReopen}>
+                재오픈
               </button>
             )}
           </>

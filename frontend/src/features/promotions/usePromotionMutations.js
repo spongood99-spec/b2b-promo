@@ -47,3 +47,11 @@ export function useUpdateAndApprovePromotion(id) {
     onSuccess: () => invalidateBoth(queryClient, id),
   });
 }
+
+export function useReopenPromotion(id) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.patch(`/promotions/${id}/reopen`),
+    onSuccess: () => invalidateBoth(queryClient, id),
+  });
+}
