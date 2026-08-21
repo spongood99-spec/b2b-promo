@@ -42,6 +42,10 @@
   padding: var(--space-1) var(--space-3);
 }
 
+.calendar-nav .btn-query {
+  margin-left: var(--space-2);
+}
+
 .calendar-grid-month,
 .calendar-grid-week {
   display: grid;

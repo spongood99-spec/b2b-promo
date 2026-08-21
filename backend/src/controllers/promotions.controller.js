@@ -20,6 +20,8 @@ async function list(req, res, next) {
       status: req.query.status,
       from: req.query.from,
       to: req.query.to,
+      page: req.query.page,
+      limit: req.query.limit,
     });
     res.status(200).json(promotions);
   } catch (err) {

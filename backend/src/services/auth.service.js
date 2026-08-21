@@ -111,4 +111,32 @@ async function refresh(refreshTokenCookie) {
   return { accessToken: signAccessToken(user), user };
 }
 
-module.exports = { signup, login, refresh };
+async function changePassword({ userId, current_password, new_password }) {
+  if (!current_password || !new_password) {
+    const err = new Error('현재 비밀번호와 새 비밀번호를 모두 입력해야 합니다');
+    err.status = 400;
+    err.code = 'VALIDATION_ERROR';
+    throw err;
+  }
+  if (new_password.length < 8) {
+    const err = new Error('새 비밀번호는 8자 이상이어야 합니다');
+    err.status = 400;
+    err.code = 'VALIDATION_ERROR';
+    throw err;
+  }
+
+  const result = await pool.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+  const user = result.rows[0];
+  const matches = user && (await bcrypt.compare(current_password, user.password_hash));
+  if (!matches) {
+    const err = new Error('현재 비밀번호가 올바르지 않습니다');
+    err.status = 401;
+    err.code = 'INVALID_CREDENTIALS';
+    throw err;
+  }
+
+  const newHash = await bcrypt.hash(new_password, 10);
+  await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, userId]);
+}
+
+module.exports = { signup, login, refresh, changePassword };

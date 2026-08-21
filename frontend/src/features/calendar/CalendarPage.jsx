@@ -89,6 +89,9 @@ export function CalendarPage() {
           <button type="button" onClick={() => setAnchor(shift(anchor, view, -1))}>{'<'}</button>
           <span>{formatLabel(anchor, view)}</span>
           <button type="button" onClick={() => setAnchor(shift(anchor, view, 1))}>{'>'}</button>
+          <button type="button" className="btn-query" onClick={() => query.refetch()}>
+            조회
+          </button>
         </div>
       </div>
 

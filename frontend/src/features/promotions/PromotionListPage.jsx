@@ -43,13 +43,24 @@ function sortPromotions(promotions, sortKey, sortDir) {
   return sortDir === 'desc' ? sorted.reverse() : sorted;
 }
 
+const PAGE_SIZE = 20;
+
 export function PromotionListPage() {
   const [status, setStatus] = useState('');
+  const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const query = usePromotions(status);
+  const query = usePromotions(status, page, PAGE_SIZE);
+  const promotions = query.data?.items ?? [];
+  const total = query.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  function handleStatusChange(value) {
+    setStatus(value);
+    setPage(1);
+  }
 
   function handleSort(key) {
     if (sortKey === key) {
@@ -65,17 +76,23 @@ export function PromotionListPage() {
       <AppHeader activeNav="list" />
 
       <div className="promotion-list-toolbar">
-        <select
-          className="status-filter-select"
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          {STATUS_OPTIONS.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+        <div className="promotion-list-filters">
+          <select
+            className="status-filter-select"
+            value={status}
+            onChange={(e) => handleStatusChange(e.target.value)}
+          >
+            {STATUS_OPTIONS.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+
+          <button type="button" className="btn-query" onClick={() => query.refetch()}>
+            조회
+          </button>
+        </div>
 
         {user?.role === 'partner' && (
           <button
@@ -90,11 +107,11 @@ export function PromotionListPage() {
 
       {query.isLoading && <p>불러오는 중...</p>}
       {query.isError && <p>{query.error?.message}</p>}
-      {query.isSuccess && query.data.length === 0 && (
+      {query.isSuccess && promotions.length === 0 && (
         <p>{status ? '선택한 상태의 프로모션이 없습니다' : '등록된 프로모션이 없습니다'}</p>
       )}
 
-      {query.isSuccess && query.data.length > 0 && (
+      {query.isSuccess && promotions.length > 0 && (
         <table className="promotion-table">
           <thead>
             <tr>
@@ -111,7 +128,7 @@ export function PromotionListPage() {
             </tr>
           </thead>
           <tbody>
-            {sortPromotions(query.data, sortKey, sortDir).map((promotion) => (
+            {sortPromotions(promotions, sortKey, sortDir).map((promotion) => (
               <tr key={promotion.id}>
                 <td>
                   <Link className="row-link" to={`/promotions/${promotion.id}`}>
@@ -138,6 +155,18 @@ export function PromotionListPage() {
             ))}
           </tbody>
         </table>
+      )}
+
+      {query.isSuccess && total > 0 && (
+        <div className="pagination">
+          <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+            {'<'}
+          </button>
+          <span>{page} / {totalPages}</span>
+          <button type="button" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+            {'>'}
+          </button>
+        </div>
       )}
     </div>
   );

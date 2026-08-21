@@ -9,6 +9,11 @@
   margin-bottom: var(--space-4);
 }
 
+.promotion-list-filters {
+  display: flex;
+  gap: var(--space-2);
+}
+
 .status-filter-select {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-input);
@@ -69,6 +74,28 @@
   display: block;
   color: inherit;
   text-decoration: none;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.pagination button {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: var(--color-surface);
+  cursor: pointer;
+  padding: var(--space-1) var(--space-3);
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .status-badge {

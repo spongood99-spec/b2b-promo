@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { ChangePasswordModal } from './ChangePasswordModal';
 import './AppHeader.css';
 
 export function AppHeader({ activeNav }) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   function handleLogout() {
     useAuthStore.getState().clearAuth();
@@ -26,10 +29,15 @@ export function AppHeader({ activeNav }) {
         <span className="app-user-info">
           {user?.company_name} / {user?.email}
         </span>
+        <button type="button" className="btn-logout" onClick={() => setShowChangePassword(true)}>
+          비밀번호 변경
+        </button>
         <button type="button" className="btn-logout" onClick={handleLogout}>
           로그아웃
         </button>
       </div>
+
+      {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
     </header>
   );
 }

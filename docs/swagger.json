@@ -65,6 +65,16 @@
         "enum": ["proposed", "in_review", "approved", "rejected", "active", "closed", "cancelled"],
         "description": "제안됨/검토중/승인됨/반려됨/진행중/종료/취소됨"
       },
+      "PaginatedPromotions": {
+        "type": "object",
+        "description": "from/to 없이(캘린더용이 아닌 일반 목록) 조회할 때의 응답 형태",
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Promotion" } },
+          "total": { "type": "integer", "example": 42 },
+          "page": { "type": "integer", "example": 1 },
+          "limit": { "type": "integer", "example": 20 }
+        }
+      },
       "Promotion": {
         "type": "object",
         "properties": {
@@ -301,6 +311,37 @@
         }
       }
     },
+    "/auth/password": {
+      "patch": {
+        "tags": ["Auth"],
+        "summary": "비밀번호 변경",
+        "description": "로그인된 사용자가 현재 비밀번호를 확인한 뒤 새 비밀번호로 변경한다. 이메일 발송 등 외부 인프라가 필요한 '비밀번호 찾기(재설정)'와는 다른 기능이다.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["current_password", "new_password"],
+                "properties": {
+                  "current_password": { "type": "string", "format": "password" },
+                  "new_password": { "type": "string", "format": "password", "minLength": 8 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "변경 성공",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" } } } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
     "/promotions": {
       "post": {
         "tags": ["Promotions"],
@@ -347,14 +388,33 @@
             "required": false,
             "schema": { "type": "string", "format": "date" },
             "description": "조회 종료일 (해당 기간과 겹치는 프로모션 조회, 캘린더용)"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 1 },
+            "description": "페이지 번호(1부터). from/to로 조회하는 캘린더용 요청에는 적용되지 않음"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 20, "maximum": 100 },
+            "description": "페이지당 개수(최대 100). from/to로 조회하는 캘린더용 요청에는 적용되지 않음"
           }
         ],
         "responses": {
           "200": {
-            "description": "조회 성공",
+            "description": "조회 성공. from 또는 to가 있으면(캘린더용) 배열을, 없으면(일반 목록) 페이지네이션 객체를 반환한다.",
             "content": {
               "application/json": {
-                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Promotion" } }
+                "schema": {
+                  "oneOf": [
+                    { "type": "array", "items": { "$ref": "#/components/schemas/Promotion" } },
+                    { "$ref": "#/components/schemas/PaginatedPromotions" }
+                  ]
+                }
               }
             }
           },

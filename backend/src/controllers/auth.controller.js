@@ -44,4 +44,17 @@ async function refresh(req, res, next) {
   }
 }
 
-module.exports = { signup, login, refresh };
+async function changePassword(req, res, next) {
+  try {
+    await authService.changePassword({
+      userId: req.user.id,
+      current_password: req.body.current_password,
+      new_password: req.body.new_password,
+    });
+    res.status(200).json({ message: '비밀번호가 변경되었습니다' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { signup, login, refresh, changePassword };

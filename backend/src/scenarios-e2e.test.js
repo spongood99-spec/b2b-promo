@@ -65,7 +65,9 @@ test('시나리오 1: 협력사 담당자의 프로모션 제안 등록', async 
   assert.strictEqual(promotion.items.length, 1);
 
   const cj = await signupAndLogin('cj_freshway', uniqueCompany('CJ프레시웨이'));
-  const listRes = await authed(cj.token, 'GET', '/promotions');
+  // ponytail: 목록은 이제 페이지네이션되므로 개발 DB에 누적된 다른 데이터에 밀려날 수 있어,
+  // 방금 등록한 프로모션의 실제 기간으로 범위 조회(from/to, 캘린더용 — 페이징 없음)해 확실히 잡아낸다.
+  const listRes = await authed(cj.token, 'GET', '/promotions?from=2095-01-01&to=2095-01-10');
   const list = await listRes.json();
   const promotions = Array.isArray(list) ? list : list.items;
   assert.ok(promotions.some((p) => p.id === promotion.id), 'CJ프레시웨이 목록에 노출되어야 한다');
@@ -110,7 +112,7 @@ test('시나리오 1 상세: 협력사는 다른 협력사의 프로모션을 �
     })
   ).json();
 
-  const listRes = await authed(partnerB.token, 'GET', '/promotions');
+  const listRes = await authed(partnerB.token, 'GET', '/promotions?limit=1000');
   const list = await listRes.json();
   const promotions = Array.isArray(list) ? list : list.items;
   assert.ok(!promotions.some((p) => p.id === created.id), '다른 협력사의 프로모션은 보이지 않아야 한다');

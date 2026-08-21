@@ -109,13 +109,41 @@ test('협력사 계정 조회 시 본인이 등록한 프로모션만, CJ프레�
   });
   const bodyB = await resB.json();
 
-  const listA = await (await getPromotions(tokenA)).json();
+  // ponytail: 목록은 이제 페이지네이션되므로(개발 DB에 누적된 다른 테스트 데이터에 밀려날 수 있음),
+  // 두 프로모션의 실제 기간(2099-02~03)으로 범위 조회(from/to, 캘린더용 — 페이징 없음)해 확실히 잡아낸다.
+  const listA = await (await getPromotions(tokenA, '?from=2099-02-01&to=2099-02-28')).json();
   assert.ok(listA.some((p) => p.id === bodyA.id));
   assert.ok(!listA.some((p) => p.id === bodyB.id));
 
-  const listCj = await (await getPromotions(tokenCj)).json();
+  const listCj = await (await getPromotions(tokenCj, '?from=2099-02-01&to=2099-03-05')).json();
   assert.ok(listCj.some((p) => p.id === bodyA.id));
   assert.ok(listCj.some((p) => p.id === bodyB.id));
+});
+
+test('일반 목록 조회(from/to 없음)는 페이지네이션되어 items/total/page/limit을 반환한다', async () => {
+  const token = await signupAndLogin('partner');
+
+  for (let i = 0; i < 3; i++) {
+    await createPromotion(token, {
+      start_date: `2098-0${i + 1}-01`,
+      end_date: `2098-0${i + 1}-10`,
+      condition: `페이지네이션 조건 ${i}`,
+      items: [{ name: `페이지네이션품목${i}` }],
+    });
+  }
+
+  const page1 = await (await getPromotions(token, '?limit=2&page=1')).json();
+  assert.strictEqual(page1.items.length, 2);
+  assert.strictEqual(page1.total, 3);
+  assert.strictEqual(page1.page, 1);
+  assert.strictEqual(page1.limit, 2);
+
+  const page2 = await (await getPromotions(token, '?limit=2&page=2')).json();
+  assert.strictEqual(page2.items.length, 1);
+  assert.strictEqual(page2.total, 3);
+
+  const page1Ids = new Set(page1.items.map((p) => p.id));
+  assert.ok(!page2.items.some((p) => page1Ids.has(p.id)), '페이지 간 항목이 중복되지 않아야 한다');
 });
 
 test('CJ프레시웨이 계정으로 등록 시도 시 403이 반환된다', async () => {

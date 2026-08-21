@@ -129,7 +129,10 @@ async function createPromotion({ proposerId, start_date, end_date, condition, it
   return { ...promotion, items: createdItems, overlap_warning: overlapWarning };
 }
 
-async function listPromotions({ userId, role, status, from, to }) {
+const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 100;
+
+async function listPromotions({ userId, role, status, from, to, page, limit }) {
   const conditions = [];
   const params = [];
 
@@ -153,15 +156,43 @@ async function listPromotions({ userId, role, status, from, to }) {
   }
 
   const where = conditions.length ? ` WHERE ${conditions.join(' AND ')}` : '';
+
+  // 캘린더 조회(from/to)는 화면에 필요한 기간 전체를 한 번에 그려야 하므로 페이징하지 않는다.
+  const isCalendarQuery = Boolean(from || to);
+  if (isCalendarQuery) {
+    const result = await pool.query(
+      `SELECT p.*, u.company_name AS proposer_company_name
+       FROM promotions p
+       JOIN users u ON u.id = p.proposer_id${where}`,
+      params
+    );
+    // ponytail: N+1, 데이터가 많아지면 JOIN+집계로 교체
+    return Promise.all(result.rows.map(fillItems));
+  }
+
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.min(MAX_PAGE_SIZE, Math.max(1, parseInt(limit, 10) || DEFAULT_PAGE_SIZE));
+  const offset = (pageNum - 1) * limitNum;
+
+  const countResult = await pool.query(
+    `SELECT COUNT(*)::int AS total FROM promotions p${where}`,
+    params
+  );
+  const total = countResult.rows[0].total;
+
+  const pageParams = [...params, limitNum, offset];
   const result = await pool.query(
     `SELECT p.*, u.company_name AS proposer_company_name
      FROM promotions p
-     JOIN users u ON u.id = p.proposer_id${where}`,
-    params
+     JOIN users u ON u.id = p.proposer_id${where}
+     ORDER BY p.start_date DESC, p.id
+     LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
+    pageParams
   );
-
   // ponytail: N+1, 데이터가 많아지면 JOIN+집계로 교체
-  return Promise.all(result.rows.map(fillItems));
+  const items = await Promise.all(result.rows.map(fillItems));
+
+  return { items, total, page: pageNum, limit: limitNum };
 }
 
 async function getPromotionById({ id, userId, role }) {

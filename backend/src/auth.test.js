@@ -110,3 +110,58 @@ test('로그인으로 받은 refresh 쿠키로 /auth/refresh 호출 시 새 acce
   assert.strictEqual(typeof body.access_token, 'string');
   assert.ok(body.user);
 });
+
+test('비밀번호 변경 성공 시 변경된 비밀번호로만 로그인된다', async () => {
+  const email = uniqueEmail();
+  await signup(email);
+  const loginRes = await login(email);
+  const { access_token } = await loginRes.json();
+
+  const changeRes = await fetch(`${baseUrl}/auth/password`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${access_token}` },
+    body: JSON.stringify({ current_password: PASSWORD, new_password: 'newPassword123!' }),
+  });
+  assert.strictEqual(changeRes.status, 200);
+
+  const oldLoginRes = await login(email, PASSWORD);
+  assert.strictEqual(oldLoginRes.status, 401);
+
+  const newLoginRes = await login(email, 'newPassword123!');
+  assert.strictEqual(newLoginRes.status, 200);
+});
+
+test('비밀번호 변경 시 현재 비밀번호가 틀리면 401, 인증 없이는 401', async () => {
+  const email = uniqueEmail();
+  await signup(email);
+  const loginRes = await login(email);
+  const { access_token } = await loginRes.json();
+
+  const wrongCurrentRes = await fetch(`${baseUrl}/auth/password`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${access_token}` },
+    body: JSON.stringify({ current_password: 'wrong-password', new_password: 'newPassword123!' }),
+  });
+  assert.strictEqual(wrongCurrentRes.status, 401);
+
+  const noAuthRes = await fetch(`${baseUrl}/auth/password`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ current_password: PASSWORD, new_password: 'newPassword123!' }),
+  });
+  assert.strictEqual(noAuthRes.status, 401);
+});
+
+test('비밀번호 변경 시 새 비밀번호가 8자 미만이면 400', async () => {
+  const email = uniqueEmail();
+  await signup(email);
+  const loginRes = await login(email);
+  const { access_token } = await loginRes.json();
+
+  const res = await fetch(`${baseUrl}/auth/password`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${access_token}` },
+    body: JSON.stringify({ current_password: PASSWORD, new_password: 'short' }),
+  });
+  assert.strictEqual(res.status, 400);
+});
