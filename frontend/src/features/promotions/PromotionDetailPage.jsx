@@ -12,6 +12,13 @@ import {
 } from './usePromotionMutations';
 import { StatusBadge } from '../../components/StatusBadge';
 import { ChangeRequestSection } from '../changeRequests/ChangeRequestSection';
+import {
+  PromotionExtraFields,
+  PromotionExtraFieldsView,
+  EXTRA_FIELDS_INITIAL,
+  extraFieldsFromPromotion,
+  extraFieldsToPayload,
+} from './PromotionExtraFields';
 import '../auth/AuthForm.css';
 import './PromotionForm.css';
 import './PromotionDetailPage.css';
@@ -34,6 +41,7 @@ export function PromotionDetailPage() {
   const [items, setItems] = useState([]);
   const [itemName, setItemName] = useState('');
   const [itemSpec, setItemSpec] = useState('');
+  const [extraFields, setExtraFields] = useState(EXTRA_FIELDS_INITIAL);
 
   const [modalType, setModalType] = useState(null); // null | 'reject' | 'cancel'
   const [reasonText, setReasonText] = useState('');
@@ -82,6 +90,7 @@ export function PromotionDetailPage() {
     setEndDate(promotion.end_date?.slice(0, 10) ?? '');
     setCondition(promotion.condition);
     setItems(promotion.items ?? []);
+    setExtraFields(extraFieldsFromPromotion(promotion));
     setEditMode(true);
   }
 
@@ -90,12 +99,17 @@ export function PromotionDetailPage() {
     return norm(a) === norm(b);
   }
 
+  function extraFieldsEqual(a, b) {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+
   function handleCancelEdit() {
     const isDirty =
       startDate !== (promotion.start_date?.slice(0, 10) ?? '') ||
       endDate !== (promotion.end_date?.slice(0, 10) ?? '') ||
       condition !== promotion.condition ||
-      !itemsEqual(items, promotion.items ?? []);
+      !itemsEqual(items, promotion.items ?? []) ||
+      !extraFieldsEqual(extraFields, extraFieldsFromPromotion(promotion));
     if (isDirty && !window.confirm('편집 중인 내용이 사라집니다. 계속하시겠습니까?')) {
       return;
     }
@@ -116,7 +130,7 @@ export function PromotionDetailPage() {
   function handleSaveAndApprove() {
     setActionError(null);
     updateAndApproveMutation.mutate(
-      { start_date: startDate, end_date: endDate, condition, items },
+      { start_date: startDate, end_date: endDate, condition, items, ...extraFieldsToPayload(extraFields) },
       {
         onSuccess: () => setEditMode(false),
         onError: (err) => setActionError(err.message),
@@ -131,7 +145,7 @@ export function PromotionDetailPage() {
       return;
     }
     resubmitMutation.mutate(
-      { start_date: startDate, end_date: endDate, condition, items },
+      { start_date: startDate, end_date: endDate, condition, items, ...extraFieldsToPayload(extraFields) },
       {
         onSuccess: () => setEditMode(false),
         onError: (err) => setActionError(err.message),
@@ -235,6 +249,8 @@ export function PromotionDetailPage() {
               <label>조건</label>
               <textarea value={condition} onChange={(e) => setCondition(e.target.value)} />
             </div>
+
+            <PromotionExtraFields values={extraFields} onChange={setExtraFields} />
           </>
         ) : (
           <>
@@ -252,6 +268,8 @@ export function PromotionDetailPage() {
               <span className="detail-label">조건</span>
               <span>{promotion.condition}</span>
             </div>
+
+            <PromotionExtraFieldsView promotion={promotion} />
           </>
         )}
 

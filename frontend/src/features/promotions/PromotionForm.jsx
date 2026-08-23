@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useCreatePromotion } from './usePromotionMutations';
+import { PromotionExtraFields, EXTRA_FIELDS_INITIAL, extraFieldsToPayload } from './PromotionExtraFields';
 import '../auth/AuthForm.css';
 import './PromotionForm.css';
 
@@ -16,6 +17,7 @@ export function PromotionForm() {
   const [items, setItems] = useState([]);
   const [itemName, setItemName] = useState('');
   const [itemSpec, setItemSpec] = useState('');
+  const [extraFields, setExtraFields] = useState(EXTRA_FIELDS_INITIAL);
   const [formError, setFormError] = useState(null);
 
   if (user?.role !== 'partner') return <Navigate to="/" replace />;
@@ -33,7 +35,13 @@ export function PromotionForm() {
 
   function handleCancel() {
     const isDirty =
-      startDate || endDate || condition.trim() || items.length > 0 || itemName.trim() || itemSpec.trim();
+      startDate ||
+      endDate ||
+      condition.trim() ||
+      items.length > 0 ||
+      itemName.trim() ||
+      itemSpec.trim() ||
+      Object.values(extraFields).some((v) => v.trim());
     if (isDirty && !window.confirm('작성 중인 내용이 사라집니다. 계속하시겠습니까?')) {
       return;
     }
@@ -48,7 +56,7 @@ export function PromotionForm() {
     }
     setFormError(null);
     createPromotion.mutate(
-      { start_date: startDate, end_date: endDate, condition, items },
+      { start_date: startDate, end_date: endDate, condition, items, ...extraFieldsToPayload(extraFields) },
       {
         onSuccess: () => navigate('/'),
         onError: (err) => setFormError(err.message),
@@ -117,6 +125,8 @@ export function PromotionForm() {
           <label>조건</label>
           <textarea value={condition} onChange={(e) => setCondition(e.target.value)} />
         </div>
+
+        <PromotionExtraFields values={extraFields} onChange={setExtraFields} />
 
         <button type="submit" className="btn-primary" disabled={createPromotion.isPending}>
           제안 등록

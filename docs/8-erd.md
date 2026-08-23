@@ -31,6 +31,19 @@ erDiagram
         string status "proposed|in_review|approved|rejected|active|closed|cancelled"
         string reject_reason "nullable"
         string cancel_reason "nullable"
+        string discount_type "정률할인|정액할인|사은품|1+1|기타, nullable (v1.5)"
+        number discount_value "nullable (v1.5)"
+        number partner_cost_share_pct "0~100, nullable (v1.5)"
+        number moq "최소주문수량, nullable (v1.5)"
+        number available_qty "공급가능수량, nullable (v1.5)"
+        number lead_time_days "nullable (v1.5)"
+        string contact_name "nullable (v1.5)"
+        string contact_phone "nullable (v1.5)"
+        string origin_and_cert "nullable (v1.5)"
+        string shelf_life_and_storage "nullable (v1.5)"
+        string promotion_type "신제품출시|시즌행사|재고소진|단순할인|기타, nullable (v1.5)"
+        string target_channel "nullable (v1.5)"
+        string attachment_url "nullable (v1.5)"
     }
 
     items {
@@ -66,7 +79,7 @@ erDiagram
 ## 테이블 설명
 
 - **users**: 도메인 정의서 3장의 사용자(User). 협력사/CJ프레시웨이 담당자를 `role`로 구분해 단일 테이블에 저장한다.
-- **promotions**: 도메인 정의서 3장의 프로모션(Promotion). 제안자(`proposer_id`)는 필수, 검토자(`reviewer_id`)는 검토/승인/반려/취소 시점에 채워지므로 nullable이다.
+- **promotions**: 도메인 정의서 3장의 프로모션(Promotion). 제안자(`proposer_id`)는 필수, 검토자(`reviewer_id`)는 검토/승인/반려/취소 시점에 채워지므로 nullable이다. `discount_type`~`attachment_url`은 협력사 실무 제안 속성으로 전부 선택 입력이다(v1.5, 2026-08-21). `partner_cost_share_pct`는 합의된 조건만 기록하며 실제 정산 처리는 하지 않는다(도메인 정의서 5장 Don't 규칙 준수). `attachment_url`은 파일 업로드 저장소 없이 외부 링크만 저장한다.
 - **items**: 도메인 정의서 3장의 대상품목(Item). PRD FR-2에 따라 별도 CRUD 화면 없이 프로모션 등록 폼에서 즉시 생성된다.
 - **promotion_items**: 프로모션과 대상품목의 N:M 관계를 표현하는 연결 테이블(PRD 6장 실제 테이블명).
 - **change_requests**: 도메인 정의서 3장의 변경요청(ChangeRequest). `is_post_approval_change`로 EC-03(승인후변경) 여부를 구분한다.

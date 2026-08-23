@@ -36,6 +36,49 @@ const CANCELLABLE_FROM = ['approved', 'active'];
 const REOPENABLE_FROM = ['closed', 'cancelled'];
 const RESUBMITTABLE_FROM = ['rejected'];
 
+// 협력사 실무 제안 속성 (선택 입력, 2026-08-21 v1.5 — docs/1-domain-definition.md 참고)
+const DISCOUNT_TYPES = ['정률할인', '정액할인', '사은품', '1+1', '기타'];
+const PROMOTION_TYPES = ['신제품출시', '시즌행사', '재고소진', '단순할인', '기타'];
+const EXTRA_FIELDS = [
+  'discount_type',
+  'discount_value',
+  'partner_cost_share_pct',
+  'moq',
+  'available_qty',
+  'lead_time_days',
+  'contact_name',
+  'contact_phone',
+  'origin_and_cert',
+  'shelf_life_and_storage',
+  'promotion_type',
+  'target_channel',
+  'attachment_url',
+];
+
+function validateExtraFields(payload) {
+  if (payload.discount_type != null && !DISCOUNT_TYPES.includes(payload.discount_type)) {
+    throw validationError('할인유형 값이 올바르지 않습니다');
+  }
+  if (payload.promotion_type != null && !PROMOTION_TYPES.includes(payload.promotion_type)) {
+    throw validationError('프로모션유형 값이 올바르지 않습니다');
+  }
+  if (payload.partner_cost_share_pct != null) {
+    const pct = Number(payload.partner_cost_share_pct);
+    if (Number.isNaN(pct) || pct < 0 || pct > 100) {
+      throw validationError('협력사부담율은 0~100 사이 숫자여야 합니다');
+    }
+  }
+}
+
+function appendOptionalSetClauses(setClauses, params, payload, fields) {
+  for (const field of fields) {
+    if (payload[field] !== undefined) {
+      params.push(payload[field]);
+      setClauses.push(`${field}=$${params.length}`);
+    }
+  }
+}
+
 function canApprove(status) { return APPROVABLE_FROM.includes(status); }
 function canReject(status) { return REJECTABLE_FROM.includes(status); }
 function canCancel(status) { return CANCELLABLE_FROM.includes(status); }
@@ -85,10 +128,11 @@ async function checkOverlapWarning({ excludePromotionId, companyName, itemNames,
   return result.rows.length > 0;
 }
 
-async function createPromotion({ proposerId, start_date, end_date, condition, items }) {
+async function createPromotion({ proposerId, start_date, end_date, condition, items, ...extra }) {
   if (!start_date || !end_date || !condition || !Array.isArray(items) || items.length === 0) {
     throw validationError('필수 항목이 누락되었습니다');
   }
+  validateExtraFields(extra);
 
   const client = await pool.connect();
   let promotion;
@@ -97,9 +141,12 @@ async function createPromotion({ proposerId, start_date, end_date, condition, it
   try {
     await client.query('BEGIN');
 
+    const extraValues = EXTRA_FIELDS.map((field) => extra[field] ?? null);
+    const extraPlaceholders = EXTRA_FIELDS.map((_, i) => `$${i + 5}`).join(', ');
     const promotionResult = await client.query(
-      'INSERT INTO promotions (proposer_id, start_date, end_date, condition) VALUES ($1,$2,$3,$4) RETURNING *',
-      [proposerId, start_date, end_date, condition]
+      `INSERT INTO promotions (proposer_id, start_date, end_date, condition, ${EXTRA_FIELDS.join(', ')})
+       VALUES ($1,$2,$3,$4, ${extraPlaceholders}) RETURNING *`,
+      [proposerId, start_date, end_date, condition, ...extraValues]
     );
     promotion = promotionResult.rows[0];
 
@@ -310,11 +357,12 @@ async function cancelPromotion({ id, reviewerId, cancel_reason }) {
   return fillItems(result.rows[0]);
 }
 
-async function updateAndApprovePromotion({ id, reviewerId, start_date, end_date, condition, items }) {
+async function updateAndApprovePromotion({ id, reviewerId, start_date, end_date, condition, items, ...extra }) {
   const promotion = await findPromotionOrThrow(id);
   if (!canApprove(promotion.status)) {
     throw invalidTransition(`현재 상태(${promotion.status})에서는 승인할 수 없습니다`);
   }
+  validateExtraFields(extra);
 
   const setClauses = [];
   const params = [];
@@ -330,6 +378,7 @@ async function updateAndApprovePromotion({ id, reviewerId, start_date, end_date,
     params.push(condition);
     setClauses.push(`condition=$${params.length}`);
   }
+  appendOptionalSetClauses(setClauses, params, extra, EXTRA_FIELDS);
   params.push(reviewerId);
   setClauses.push(`reviewer_id=$${params.length}`);
   setClauses.push("status='approved'");
@@ -417,7 +466,7 @@ async function reopenPromotion({ id }) {
   return fillItems(result.rows[0]);
 }
 
-async function resubmitPromotion({ id, proposerId, start_date, end_date, condition, items }) {
+async function resubmitPromotion({ id, proposerId, start_date, end_date, condition, items, ...extra }) {
   const promotion = await findPromotionOrThrow(id);
 
   if (promotion.proposer_id !== proposerId) {
@@ -429,6 +478,12 @@ async function resubmitPromotion({ id, proposerId, start_date, end_date, conditi
   if (!start_date || !end_date || !condition || !Array.isArray(items) || items.length === 0) {
     throw validationError('필수 항목이 누락되었습니다');
   }
+  validateExtraFields(extra);
+
+  const setClauses = ["start_date=$1", "end_date=$2", "condition=$3", "status='proposed'", "reject_reason=NULL"];
+  const params = [start_date, end_date, condition];
+  appendOptionalSetClauses(setClauses, params, extra, EXTRA_FIELDS);
+  params.push(id);
 
   const client = await pool.connect();
   let updatedPromotion;
@@ -437,10 +492,8 @@ async function resubmitPromotion({ id, proposerId, start_date, end_date, conditi
     await client.query('BEGIN');
 
     const updateResult = await client.query(
-      `UPDATE promotions
-       SET start_date=$1, end_date=$2, condition=$3, status='proposed', reject_reason=NULL
-       WHERE id=$4 RETURNING *`,
-      [start_date, end_date, condition, id]
+      `UPDATE promotions SET ${setClauses.join(', ')} WHERE id=$${params.length} RETURNING *`,
+      params
     );
     updatedPromotion = updateResult.rows[0];
 

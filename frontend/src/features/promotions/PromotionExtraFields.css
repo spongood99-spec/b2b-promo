@@ -1,0 +1,23 @@
+.extra-fields {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-4);
+}
+
+.extra-fields summary {
+  cursor: pointer;
+  font-weight: var(--weight-medium);
+}
+
+.extra-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3) var(--space-4);
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 767px) {
+  .extra-fields-grid {
+    grid-template-columns: 1fr;
+  }
+}

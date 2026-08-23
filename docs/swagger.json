@@ -96,6 +96,26 @@
             "type": "boolean",
             "description": "동일 대상품목 + 동일 공급사 기준 기간이 1일 이상 겹치는 다른 프로모션이 있을 때 true (EC-05, P1)"
           }
+        },
+        "allOf": [{ "$ref": "#/components/schemas/PromotionExtraFields" }]
+      },
+      "PromotionExtraFields": {
+        "type": "object",
+        "description": "협력사 실무 제안 속성. 전부 선택 입력(2026-08-21 v1.5 — docs/1-domain-definition.md 참고)",
+        "properties": {
+          "discount_type": { "type": "string", "nullable": true, "enum": ["정률할인", "정액할인", "사은품", "1+1", "기타"] },
+          "discount_value": { "type": "number", "nullable": true, "description": "정률할인이면 %, 정액할인이면 원 단위 값" },
+          "partner_cost_share_pct": { "type": "number", "nullable": true, "minimum": 0, "maximum": 100, "description": "협력사 부담율(%). 합의된 조건 기록용이며 실제 정산 처리는 하지 않음" },
+          "moq": { "type": "integer", "nullable": true, "description": "최소주문수량" },
+          "available_qty": { "type": "integer", "nullable": true, "description": "공급가능수량" },
+          "lead_time_days": { "type": "integer", "nullable": true, "description": "발주~공급 소요일" },
+          "contact_name": { "type": "string", "nullable": true, "description": "협력사 실무 담당자 성명" },
+          "contact_phone": { "type": "string", "nullable": true, "description": "협력사 실무 담당자 연락처" },
+          "origin_and_cert": { "type": "string", "nullable": true, "description": "원산지/인증정보(HACCP 등)" },
+          "shelf_life_and_storage": { "type": "string", "nullable": true, "description": "유통기한/보관조건" },
+          "promotion_type": { "type": "string", "nullable": true, "enum": ["신제품출시", "시즌행사", "재고소진", "단순할인", "기타"] },
+          "target_channel": { "type": "string", "nullable": true, "description": "특정 채널/거래선 한정 시 명시(미입력 시 전체)" },
+          "attachment_url": { "type": "string", "nullable": true, "description": "상품 이미지/견적서 등 외부 저장소 링크" }
         }
       },
       "ChangeRequestApplyStatus": {
@@ -160,7 +180,8 @@
             "minItems": 1,
             "items": { "$ref": "#/components/schemas/ItemInput" }
           }
-        }
+        },
+        "allOf": [{ "$ref": "#/components/schemas/PromotionExtraFields" }]
       },
       "UpdatePromotionRequest": {
         "type": "object",
@@ -173,7 +194,8 @@
             "type": "array",
             "items": { "$ref": "#/components/schemas/ItemInput" }
           }
-        }
+        },
+        "allOf": [{ "$ref": "#/components/schemas/PromotionExtraFields" }]
       },
       "RejectPromotionRequest": {
         "type": "object",

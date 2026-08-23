@@ -20,6 +20,22 @@ CREATE TABLE promotions (
                    CHECK (status IN ('proposed', 'in_review', 'approved', 'rejected', 'active', 'closed', 'cancelled')),
     reject_reason  text,
     cancel_reason  text,
+
+    -- 협력사 실무 제안 속성 (선택 입력, 2026-08-21 v1.5 — docs/1-domain-definition.md 참고)
+    discount_type          varchar(20) CHECK (discount_type IN ('정률할인', '정액할인', '사은품', '1+1', '기타')),
+    discount_value          numeric,
+    partner_cost_share_pct  numeric CHECK (partner_cost_share_pct BETWEEN 0 AND 100),
+    moq                     integer,
+    available_qty           integer,
+    lead_time_days          integer,
+    contact_name            varchar(100),
+    contact_phone           varchar(50),
+    origin_and_cert         text,
+    shelf_life_and_storage  text,
+    promotion_type          varchar(20) CHECK (promotion_type IN ('신제품출시', '시즌행사', '재고소진', '단순할인', '기타')),
+    target_channel          varchar(200),
+    attachment_url           varchar(500),
+
     CHECK (end_date >= start_date)
 );
 
