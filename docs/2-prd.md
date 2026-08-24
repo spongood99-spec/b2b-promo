@@ -89,7 +89,7 @@
         | pg
         v
 [PostgreSQL 17]
-    - users, promotions, items, promotion_items, change_requests
+    - users, promotions, items, promotion_items, change_requests, notifications(2026-08-21 추가, FR-13)
 ```
 
 ## 7. 일정 및 리소스 계획 (3일, 1인 개발)

@@ -9,7 +9,7 @@
 2. **실용성 우선** — 정답보다 3일 안에 동작하는 코드가 우선. 레이어를 나누는 이유는 "이해하기 쉬워서"이지 "정석이라서"가 아니다.
 3. **관심사 분리는 최소 단위로** — 라우트/컨트롤러/서비스, UI/상태/서버상태 처럼 문서 6~7장에 정의한 딱 그만큼만 나눈다. 그 이상 세분화(예: repository 계층, usecase 계층, DTO 변환 계층 등) 하지 않는다.
 4. **단일 진실 원천(SSOT)** — 서버 상태(프로모션, 변경요청 등)는 TanStack Query 캐시가 유일한 소스다. 같은 데이터를 Zustand에 중복 저장하지 않는다. DB에서는 각 값이 한 테이블/한 컬럼에만 존재한다(정규화, 파생 데이터 저장 금지).
-5. **일관된 에러 처리** — 백엔드는 모든 에러를 `{ error: { code, message } }` 형태의 단일 포맷으로 응답하고, HTTP 상태코드로 종류를 구분한다(400/401/403/404/409/500). 프론트는 TanStack Query의 `onError`/`isError`에서 이 포맷 하나만 처리하면 된다. 커스텀 에러 클래스 계층을 여러 단계로 만들지 않는다.
+5. **일관된 에러 처리** — 백엔드는 모든 에러를 `{ error: { code, message } }` 형태의 단일 포맷으로 응답하고, HTTP 상태코드로 종류를 구분한다(400/401/403/404/409/429/500). 프론트는 TanStack Query의 `onError`/`isError`에서 이 포맷 하나만 처리하면 된다. 커스텀 에러 클래스 계층을 여러 단계로 만들지 않는다. 단, 메시지 노출 범위는 구분한다 — 서비스 계층에서 명시적으로 `err.status`를 지정해 던진 에러(검증 실패, 권한 없음 등)는 메시지를 그대로 응답하고, `err.status`가 없는(처리되지 않은) 예외는 DB 원본 메시지 등 내부 구조가 노출될 수 있어 고정 문구로 대체하며 상세는 서버 로그에만 남긴다(`middlewares/errorHandler.js`, 2026-08-21).
 6. **도메인 용어를 코드 전체에서 그대로 쓴다** — 새 용어를 만들거나 의역하지 않는다(3장 참고).
 7. **미리 만들지 않는다** — 인증/권한, 상태 전이(도메인 정의서 6장)처럼 지금 요구된 로직만 구현한다. FR-8/FR-9(P1)은 시간이 남을 때만 붙이는 확장이지, 처음부터 자리를 비워두지 않는다.
 
@@ -68,12 +68,12 @@ UI (컴포넌트/페이지)
 
 ## 5. 설정 / 보안 / 운영 원칙
 
-- **환경변수**: `.env` 파일 하나로 관리(`DATABASE_URL`, `PORT`, `CORS_ORIGIN`, `NODE_ENV`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ACCESS_EXPIRES`, `JWT_REFRESH_EXPIRES` 등). 환경별 분리(dev/staging/prod)는 하지 않는다. `.env`는 `.gitignore`에 포함하고 `.env.example`만 커밋한다.
-- **JWT**: access token은 짧은 만료(기본 15분, `JWT_ACCESS_EXPIRES`로 조정 가능), refresh token은 김(기본 7일, `JWT_REFRESH_EXPIRES`로 조정 가능). access는 클라이언트 메모리(Zustand)에만, refresh는 HttpOnly Secure 쿠키. 서버는 서명/만료만 검증하며 블랙리스트·회전 이력은 관리하지 않는다(PRD 5장과 동일, MVP 범위 밖).
+- **환경변수**: `.env` 파일 하나로 관리(`DATABASE_URL`, `PORT`, `CORS_ORIGIN`, `NODE_ENV`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ACCESS_EXPIRES`, `JWT_REFRESH_EXPIRES` 등). 환경별 분리(dev/staging/prod)는 하지 않는다. `.env`는 `.gitignore`에 포함하고 `.env.example`만 커밋한다. 필수 환경변수(`DATABASE_URL`/`JWT_ACCESS_SECRET`/`JWT_REFRESH_SECRET`/`CORS_ORIGIN`) 중 하나라도 없으면 앱 부팅 시 즉시 종료한다(`app.js`, fail-fast, 2026-08-21) — 배포 실수를 첫 요청이 아니라 기동 시점에 드러내기 위함.
+- **JWT**: access token은 짧은 만료(기본 15분, `JWT_ACCESS_EXPIRES`로 조정 가능), refresh token은 김(기본 7일, `JWT_REFRESH_EXPIRES`로 조정 가능). access는 클라이언트 메모리(Zustand)에만, refresh는 HttpOnly Secure 쿠키. 서버는 서명/만료만 검증하며 블랙리스트·회전 이력은 관리하지 않는다(PRD 5장과 동일, MVP 범위 밖). `POST /auth/logout`(2026-08-21 추가)은 refresh_token 쿠키만 지우며, 이미 발급된 access token을 서버가 강제로 무효화하지는 않는다(짧은 만료로 대응).
 - **DB 접속정보**: `DATABASE_URL` 환경변수 하나로 pg Pool을 생성한다. 커넥션 풀 설정도 기본값 위주로, 별도 튜닝은 하지 않는다.
 - **로깅**: `console.log`/`console.error` 수준의 최소 로깅으로 충분하다. 요청 진입 시 method+path, 에러 발생 시 스택트레이스 정도만 남긴다. 구조화 로깅(JSON), 분산 트레이싱, 로그 수집 인프라는 도입하지 않는다.
-- **배포**: 단일 서버(Node.js 프로세스 하나 + PostgreSQL 하나) 전제. 이중화, 로드밸런서, 오토스케일링, 캐시 레이어(Redis 등)는 만들지 않는다.
-- **비밀번호**: bcrypt 등으로 해시 저장. 그 외 계정 잠금, 2FA 등은 범위 밖(EC-06).
+- **배포**: 최초 설계는 단일 서버(Node.js 프로세스 하나 + PostgreSQL 하나) 전제였으나, 실제 운영은 프론트/백엔드가 각각 별도 Vercel 프로젝트로 분리 배포되고 DB는 Supabase Postgres다(`6-arch-diagram.md` 참고). 이중화, 로드밸런서, 오토스케일링, 캐시 레이어(Redis 등)는 여전히 만들지 않는다.
+- **비밀번호**: bcrypt로 해시 저장, 회원가입/변경 모두 8자 이상 강제(2026-08-21부터 회원가입도 동일 정책). 계정 단위 잠금, 2FA 등은 범위 밖(EC-06)이나, `/auth/login`·`/auth/signup`에는 IP 기준 rate limit(15분당 20회, 2026-08-21 추가)이 있어 무차별 대입에 대한 최소 방어선은 있다.
 
 ## 6. 프론트엔드 디렉토리 구조
 

@@ -17,7 +17,7 @@ flowchart LR
 
     Server["Express 서버<br/>(JWT 인증, 역할 기반 접근 제어,<br/>프로모션/변경요청 CRUD·상태 전이)"]
 
-    DB[("PostgreSQL 17<br/>users / promotions / items /<br/>promotion_items / change_requests")]
+    DB[("PostgreSQL 17<br/>users / promotions / items /<br/>promotion_items / change_requests / notifications")]
 
     User --> Client
     TanstackQuery <-->|"REST API 호출<br/>(access token: Authorization 헤더,<br/>refresh token: HttpOnly Secure 쿠키)"| Server
@@ -34,6 +34,7 @@ sequenceDiagram
     participant DB as PostgreSQL
 
     C->>S: POST /auth/login (이메일/비밀번호)
+    Note over S: /auth/login, /auth/signup은 IP당 15분에 20회로<br/>rate limit(2026-08-21, express-rate-limit). 초과 시 429
     S->>DB: 사용자 조회 및 비밀번호 검증
     DB-->>S: 사용자 정보
     S-->>C: access token(응답 바디) + refresh token(HttpOnly Secure 쿠키)
@@ -47,6 +48,10 @@ sequenceDiagram
     C->>S: POST /auth/refresh (refresh token 쿠키 자동 전송)
     S-->>C: 새 access token 재발급
     C->>S: 원래 요청 재시도
+
+    C->>S: POST /auth/logout (2026-08-21 추가)
+    S-->>C: refresh_token 쿠키 삭제
+    Note over S: 서버측 토큰 무효화 저장소는 없음(access token은 짧은 만료로 대응).<br/>로그아웃해도 이미 발급된 access token은 자연 만료 전까지 유효
 ```
 
 ## 3. 프론트엔드 컴포넌트 구조
@@ -71,6 +76,16 @@ flowchart TD
     ChangeRequestSection -.->|useChangeRequests| Common
 
     CalendarPage -.->|useCalendarPromotions| Common
+
+    Common --> AppHeader["AppHeader<br/>(components, 모든 화면 상단 공통)"]
+    AppHeader --> NotificationBell["NotificationBell<br/>(components, 2026-08-21 추가)"]
+    AppHeader --> ChangePasswordModal["ChangePasswordModal<br/>(components, 2026-08-21 추가)"]
+    NotificationBell -.->|useNotifications| Common
+    PromotionForm --> PromotionExtraFields["PromotionExtraFields<br/>(features/promotions, 13개 실무속성 입력, 2026-08-21 추가)"]
+    PromotionDetailPage --> PromotionExtraFields
+    ChangePasswordModal -.->|useModalA11y| A11yHook["useModalA11y<br/>(hooks, 포커스 이동/Esc닫기/포커스 복원, 2026-08-21 추가)"]
+    PromotionDetailPage -.->|useModalA11y 반려·취소 사유 모달| A11yHook
 ```
 
 > 참고: `PromotionForm`은 `PromotionDetailPage`의 자식 컴포넌트가 아니라 `/promotions/new`로 라우팅되는 별도 화면이다. `PromotionDetailPage`의 "수정 후 승인" 인라인 편집 모드는 `PromotionForm`을 재사용하지 않고 자체적으로 구현되어 있다(품목 추가/삭제 UI가 두 파일에 각각 존재).
+> `PromotionExtraFields`는 등록(`PromotionForm`)과 상세 편집(`PromotionDetailPage`의 "수정 후 승인"/"재제출") 양쪽에서 공유하는 컴포넌트다.
