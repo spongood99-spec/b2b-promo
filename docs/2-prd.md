@@ -68,7 +68,7 @@
 
 - **UI**: 반응형 웹 UI 필수. 데스크톱 우선으로 설계하되 모바일 브라우저에서도 레이아웃이 깨지지 않도록 한다. 별도 모바일 앱은 고려하지 않는다.
 - **성능**: 특별한 목표치 없이, 목록/캘린더 조회 시 일반적인 웹 서비스 수준의 응답 속도면 충분하다. 별도의 캐싱/최적화 인프라는 도입하지 않는다.
-- **보안**: 로그인 인증 필수(모든 사용자는 인증 후에만 서비스 이용). JWT 기반 인증을 사용하며, access token(단기, 만료 시 재발급 필요)과 refresh token(장기)을 함께 발급한다. access token은 클라이언트 메모리(Zustand)에 보관하고, refresh token은 HttpOnly Secure 쿠키에 저장한다. access token 만료 시 refresh token으로 `/auth/refresh` 엔드포인트를 통해 재발급받는다. refresh token 서버 측 폐기(블랙리스트/회전 이력 관리)는 MVP 범위 밖이며 단순 검증(서명·만료, `type` 클레임으로 access/refresh 상호 재사용 방지)만 수행한다. 비밀번호는 해시 저장(8자 이상). 역할(협력사/CJ프레시웨이) 기반으로 API 접근을 구분한다(TOCTOU 상태전이 가드, IDOR 방지 포함). `/auth/login`·`/auth/signup`은 IP당 15분에 20회로 rate limit한다(2026-08-21). 그 외 세부 보안 정책(계정 잠금 등)은 MVP 범위 밖.
+- **보안**: 로그인 인증 필수(모든 사용자는 인증 후에만 서비스 이용). JWT 기반 인증을 사용하며, access token(단기, 만료 시 재발급 필요)과 refresh token(장기)을 함께 발급한다. access token은 클라이언트 메모리(Zustand)에 보관하고, refresh token은 HttpOnly Secure 쿠키에 저장한다. access token 만료 시 refresh token으로 `/auth/refresh` 엔드포인트를 통해 재발급받는다. refresh token 서버 측 폐기(블랙리스트/회전 이력 관리)는 MVP 범위 밖이며 단순 검증(서명·만료, `type` 클레임으로 access/refresh 상호 재사용 방지)만 수행한다. 비밀번호는 해시 저장(8자 이상). 역할(협력사/CJ프레시웨이) 기반으로 API 접근을 구분한다(TOCTOU 상태전이 가드, IDOR 방지 포함). `/auth/login`·`/auth/signup`은 IP당 15분에 20회로 rate limit한다(2026-08-21). `helmet`으로 `X-Content-Type-Options`/`X-Frame-Options`/HSTS 등 기본 보안 헤더를 적용하고, 첨부링크(`attachment_url`)는 `http(s)://` 스킴만 허용한다(2026-08-24). 그 외 세부 보안 정책(계정 잠금 등)은 MVP 범위 밖.
 - **접근성(A11y)**: 별도 접근성 감사/인증(WCAG 준수 선언 등)은 범위 밖이지만, 출하검사 과정에서 발견된 기본적인 접근성 결함은 수정한다 — label-input 연결, 모달 포커스 이동/Esc닫기/Tab 트랩/포커스 복원, 폼 에러의 `role="alert"` 안내, 키보드만으로의 핵심 플로우 완주, 상태 배지 WCAG AA(4.5:1) 색상 대비(2026-08-21~24).
 - **가용성/인프라**: 별도 이중화, 오토스케일링 등은 고려하지 않는다. 1인 개발·최소 예산 전제로 단일 서버 구성.
 
