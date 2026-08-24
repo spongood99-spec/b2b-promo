@@ -6,12 +6,14 @@ const VALID_ROLES = ['partner', 'cj_freshway'];
 
 function signAccessToken(user) {
   return jwt.sign({ sub: user.id, role: user.role }, process.env.JWT_ACCESS_SECRET, {
+    algorithm: 'HS256',
     expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m',
   });
 }
 
 function signRefreshToken(user) {
   return jwt.sign({ sub: user.id, role: user.role }, process.env.JWT_REFRESH_SECRET, {
+    algorithm: 'HS256',
     expiresIn: process.env.JWT_REFRESH_EXPIRES || '7d',
   });
 }
@@ -100,7 +102,7 @@ async function refresh(refreshTokenCookie) {
 
   let payload;
   try {
-    payload = jwt.verify(refreshTokenCookie, process.env.JWT_REFRESH_SECRET);
+    payload = jwt.verify(refreshTokenCookie, process.env.JWT_REFRESH_SECRET, { algorithms: ['HS256'] });
   } catch (err) {
     throw unauthorized();
   }

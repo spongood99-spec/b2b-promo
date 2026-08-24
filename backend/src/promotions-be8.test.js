@@ -188,3 +188,71 @@ test('기간 중복 경고 - 겹치는 기존 프로모션 없으면 overlap_war
   assert.strictEqual(res.status, 201);
   assert.strictEqual(body.overlap_warning, false);
 });
+
+test('기간 중복 경고 - 동일 회사·다른 품목이면 겹쳐도 overlap_warning false(AND 조건)', async () => {
+  const uniqueSuffix = crypto.randomUUID();
+  const companyName = `Company AND-1 ${uniqueSuffix}`;
+  const partner = await signupAndLogin('partner', companyName);
+
+  await createPromotion(partner.token, {
+    start_date: '2096-08-01',
+    end_date: '2096-08-10',
+    items: [{ name: `품목A ${uniqueSuffix}` }],
+  });
+
+  const { res, body } = await createPromotion(partner.token, {
+    start_date: '2096-08-05',
+    end_date: '2096-08-15',
+    items: [{ name: `품목B ${uniqueSuffix}` }],
+  });
+
+  assert.strictEqual(res.status, 201);
+  assert.strictEqual(body.overlap_warning, false);
+});
+
+test('기간 중복 경고 - 다른 회사·동일 품목이면 겹쳐도 overlap_warning false(AND 조건)', async () => {
+  const uniqueSuffix = crypto.randomUUID();
+  const itemName = `공용품목 ${uniqueSuffix}`;
+  const partnerA = await signupAndLogin('partner', `Company AND-2A ${uniqueSuffix}`);
+  const partnerB = await signupAndLogin('partner', `Company AND-2B ${uniqueSuffix}`);
+
+  await createPromotion(partnerA.token, {
+    start_date: '2096-09-01',
+    end_date: '2096-09-10',
+    items: [{ name: itemName }],
+  });
+
+  const { res, body } = await createPromotion(partnerB.token, {
+    start_date: '2096-09-05',
+    end_date: '2096-09-15',
+    items: [{ name: itemName }],
+  });
+
+  assert.strictEqual(res.status, 201);
+  assert.strictEqual(body.overlap_warning, false);
+});
+
+test('기간 중복 경고 - 승인 시점에도 동일 회사·동일 품목·기간 겹침이면 overlap_warning true', async () => {
+  const uniqueSuffix = crypto.randomUUID();
+  const companyName = `Company Approve-Overlap ${uniqueSuffix}`;
+  const itemName = `승인시점품목 ${uniqueSuffix}`;
+  const partner = await signupAndLogin('partner', companyName);
+  const cj = await signupAndLogin('cj_freshway');
+
+  await createPromotion(partner.token, {
+    start_date: '2096-10-01',
+    end_date: '2096-10-10',
+    items: [{ name: itemName }],
+  });
+
+  const { body: promotionToApprove } = await createPromotion(partner.token, {
+    start_date: '2096-10-05',
+    end_date: '2096-10-15',
+    items: [{ name: itemName }],
+  });
+
+  const approveRes = await patch(cj.token, `/promotions/${promotionToApprove.id}/approve`);
+  assert.strictEqual(approveRes.status, 200);
+  const approveBody = await approveRes.json();
+  assert.strictEqual(approveBody.overlap_warning, true);
+});

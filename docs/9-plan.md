@@ -218,6 +218,24 @@ flowchart LR
   - [x] 로그아웃 호출 시 응답에 `refresh_token=;`(삭제) `Set-Cookie`가 포함된다
   - [x] 음수 할인값/최소주문수량/공급가능수량/리드타임은 400이 반환되고, 0은 허용된다
 
+### BE-15. (Low) 출하검사 하드닝 3차 (2026-08-21 추가)
+- **선행 Task**: BE-14
+- **작업 내용**: 병렬 코드 검증에서 나온 Low 항목을 조치.
+  - `jwt.sign`/`jwt.verify`에 `algorithm`/`algorithms: ['HS256']` 명시(라이브러리 기본값 의존 제거)
+  - EC-05(기간 중복 경고)의 승인 시점 경로(`updateAndApprovePromotion`) 및 "동일 품목 AND 동일 공급사" 조건을 각각 분리해 검증하는 테스트 추가(기존엔 등록 시점·동시 충족 케이스만 있었음)
+  - 재제출/알림/13개 실무속성이 한 흐름 안에서 서로 간섭 없이 동작하는지 검증하는 교차 통합테스트 추가(`integration-cross-feature.test.js`) — 재제출 시 보낸 필드만 갱신되고 안 보낸 필드는 유지되는지, 등록→반려→재제출→승인 전체 흐름에서 알림이 정확한 개수로만 쌓이는지, 승인후변경(변경요청)과 실무속성이 서로 값을 침범하지 않는지
+- **완료 조건**
+  - [x] 승인 시점에도 동일 회사·동일 품목·기간 겹침이면 `overlap_warning: true`가 반환된다
+  - [x] 동일 회사·다른 품목, 다른 회사·동일 품목은 각각 겹쳐도 `overlap_warning: false`다
+  - [x] 재제출 시 보내지 않은 실무속성은 기존 값이 유지되고, 등록→반려→재제출→승인 흐름에서 알림 4종(신규등록/반려/재제출/승인)이 각각 정확히 1건씩 생성된다
+
+### FE-15. (Low) 프론트엔드 테스트 도입 (2026-08-21 추가)
+- **선행 Task**: FE-12
+- **작업 내용**: 프론트엔드에 처음으로 자동화 테스트를 도입했다. 번들러/새 의존성 없이 Node 내장 `node --test`로 돌리기 위해, JSX가 없는 순수 로직(`PromotionExtraFields.jsx`의 필드 변환 함수)을 `promotionExtraFieldsUtils.js`로 분리하고 그 파일만 테스트한다. Zustand 스토어(`authStore`)처럼 extension-less relative import를 쓰는 파일은 Node 네이티브 ESM 로더가 해석하지 못해(Vite는 되지만 Node는 확장자 필요) 이번 범위에서는 제외했다 — 번들러 인식 테스트 러너(vitest 등) 도입은 별도 결정 필요.
+- **완료 조건**
+  - [x] `npm test`(frontend)로 `extraFieldsToPayload`/`extraFieldsFromPromotion`의 빈값→null 변환, 숫자 캐스팅, undefined 방어를 검증하는 테스트 4건이 통과한다
+  - [x] 프론트엔드 빌드(`npm run build`)가 리팩터링 이후에도 동일하게 통과한다(동작 변경 없음)
+
 ---
 
 ## 3. 프론트엔드

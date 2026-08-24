@@ -6,7 +6,7 @@ function auth(req, res, next) {
     return next(unauthorizedError());
   }
   try {
-    const payload = jwt.verify(header.slice(7), process.env.JWT_ACCESS_SECRET);
+    const payload = jwt.verify(header.slice(7), process.env.JWT_ACCESS_SECRET, { algorithms: ['HS256'] });
     req.user = { id: payload.sub, role: payload.role };
     next();
   } catch (err) {
