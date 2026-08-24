@@ -83,6 +83,7 @@ CREATE TABLE notifications (
     promotion_id  uuid REFERENCES promotions(id),
     type          varchar(30) NOT NULL,
     message       text NOT NULL,
+    is_read       boolean NOT NULL DEFAULT false,
     created_at    timestamptz NOT NULL DEFAULT now()
 );
 

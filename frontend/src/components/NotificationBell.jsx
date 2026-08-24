@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useNotifications } from '../features/notifications/useNotifications';
+import {
+  useNotifications,
+  useUnreadNotificationCount,
+  useMarkNotificationRead,
+} from '../features/notifications/useNotifications';
 import './NotificationBell.css';
 
 function formatTime(iso) {
@@ -15,6 +19,9 @@ export function NotificationBell() {
   const triggerRef = useRef(null);
   const query = useNotifications(5);
   const notifications = query.data ?? [];
+  const unreadQuery = useUnreadNotificationCount();
+  const unreadCount = unreadQuery.data?.count ?? 0;
+  const markReadMutation = useMarkNotificationRead();
 
   function close() {
     setOpen(false);
@@ -41,15 +48,23 @@ export function NotificationBell() {
 
   function handleClick(notification) {
     setOpen(false);
+    if (!notification.is_read) {
+      markReadMutation.mutate(notification.id);
+    }
     if (notification.promotion_id) {
       navigate(`/promotions/${notification.promotion_id}`);
     }
   }
 
+  function handleViewAll() {
+    setOpen(false);
+    navigate('/notifications');
+  }
+
   return (
     <div className="notification-bell" ref={containerRef}>
       <button type="button" className="btn-logout" ref={triggerRef} onClick={() => setOpen(!open)}>
-        알림 {notifications.length > 0 ? `(${notifications.length})` : ''}
+        알림 {unreadCount > 0 ? `(${unreadCount})` : ''}
       </button>
       {open && (
         <div className="notification-dropdown">
@@ -62,7 +77,11 @@ export function NotificationBell() {
             <ul>
               {notifications.map((n) => (
                 <li key={n.id}>
-                  <button type="button" onClick={() => handleClick(n)}>
+                  <button
+                    type="button"
+                    className={n.is_read ? '' : 'notification-unread'}
+                    onClick={() => handleClick(n)}
+                  >
                     <span className="notification-message">{n.message}</span>
                     <span className="notification-time">{formatTime(n.created_at)}</span>
                   </button>
@@ -70,6 +89,9 @@ export function NotificationBell() {
               ))}
             </ul>
           )}
+          <button type="button" className="notification-view-all" onClick={handleViewAll}>
+            전체보기
+          </button>
         </div>
       )}
     </div>

@@ -28,6 +28,12 @@ function formatDate(iso) {
   return iso ? iso.slice(2, 10).replace(/-/g, '.') : '';
 }
 
+function formatDateTime(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 export function PromotionDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -291,6 +297,14 @@ export function PromotionDetailPage() {
         <div className="detail-row">
           <span className="detail-label">취소사유</span>
           <span>{promotion.cancel_reason ?? '-'}</span>
+        </div>
+        <div className="detail-row">
+          <span className="detail-label">등록일시</span>
+          <span>{formatDateTime(promotion.created_at)}</span>
+        </div>
+        <div className="detail-row">
+          <span className="detail-label">최종수정일시</span>
+          <span>{formatDateTime(promotion.updated_at)}</span>
         </div>
       </div>
 

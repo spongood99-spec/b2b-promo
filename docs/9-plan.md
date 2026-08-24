@@ -258,6 +258,17 @@ flowchart LR
   - [x] `q=조건일부`/`q=품목명일부`/`q=소속사명일부`로 각각 해당 프로모션만 걸러진다
   - [x] 백엔드 테스트 100 → 103 통과
 
+### BE-18. (사용자 관점 분석 후속 2) 알림 읽음처리 + 간단 대시보드 (FR-13 확장/FR-15/FR-16, 2026-08-24 추가)
+- **선행 Task**: BE-17
+- **작업 내용**: 사용자 관점 분석에서 사용자가 선택한 나머지 3건.
+  - `notifications`에 `is_read boolean DEFAULT false` 추가. `GET /notifications/unread-count`, `PATCH /notifications/:id/read`(본인 것만, 타인 id는 조용히 무시), `PATCH /notifications/read-all` 추가(FR-13 확장)
+  - `GET /promotions/stats` 추가(FR-16) — 협력사는 본인 범위, CJ프레시웨이는 전체 범위로 status별 건수를 집계(`GROUP BY status`). `/:id`보다 먼저 등록해야 `/stats`가 `:id`에 잡히지 않는다
+  - `promotions`/`change_requests`의 기존 `created_at`/`updated_at`을 그대로 노출(FR-15, 별도 스키마 변경 없음 — 지난 라운드(BE-16)에서 이미 추가됨)
+- **완료 조건**
+  - [x] 알림을 개별/전체 읽음 처리하면 해당 알림의 `is_read`만 갱신되고, 동시에 실행 중인 다른 테스트의 브로드캐스트 알림에는 영향 없다
+  - [x] `GET /promotions/stats`가 협력사는 본인 프로모션만, CJ프레시웨이는 전체를 집계한다
+  - [x] 백엔드 테스트 103 → 105 통과
+
 ### FE-15. (Low) 프론트엔드 테스트 도입 (2026-08-21 추가)
 - **선행 Task**: FE-12
 - **작업 내용**: 프론트엔드에 처음으로 자동화 테스트를 도입했다. 번들러/새 의존성 없이 Node 내장 `node --test`로 돌리기 위해, JSX가 없는 순수 로직(`PromotionExtraFields.jsx`의 필드 변환 함수)을 `promotionExtraFieldsUtils.js`로 분리하고 그 파일만 테스트한다. Zustand 스토어(`authStore`)처럼 extension-less relative import를 쓰는 파일은 Node 네이티브 ESM 로더가 해석하지 못해(Vite는 되지만 Node는 확장자 필요) 이번 범위에서는 제외했다 — 번들러 인식 테스트 러너(vitest 등) 도입은 별도 결정 필요.
@@ -291,6 +302,21 @@ flowchart LR
 - **완료 조건**
   - [x] 검색어를 입력하고 "조회"를 누르면 조건/품목명/제안자 소속사명에 매칭되는 프로모션만 표시된다
   - [x] 검색 결과가 없으면 "조건에 맞는 프로모션이 없습니다"가 표시된다
+  - [x] 프론트엔드 빌드/테스트/lint가 통과한다
+
+### FE-18. (사용자 관점 분석 후속 2) 알림 전체보기/읽음처리, 변경이력 표시, 간단 대시보드 (FR-13 확장/FR-15/FR-16, 2026-08-24 추가)
+- **선행 Task**: FE-17, BE-18
+- **작업 내용**
+  - `NotificationBell`: 총 개수 대신 안읽은 개수(`useUnreadNotificationCount`) 표시, 알림 클릭 시 읽음 처리 후 이동, "전체보기" 버튼으로 `/notifications` 이동
+  - `NotificationsPage`(신규, `/notifications`): 최대 50건 목록, 안읽은 항목 강조 표시, 개별 클릭 시 읽음+이동, "모두 읽음으로 표시" 버튼
+  - `PromotionDetailPage`: "등록일시"/"최종수정일시" 행 추가(`promotion.created_at`/`updated_at`)
+  - `ChangeRequestSection`: 각 변경요청 항목에 등록일시(`cr.created_at`) 표시 — 기존에 남아있던 "created_at 컬럼 없음" ponytail 주석은 BE-16에서 이미 해소되어 제거
+  - `PromotionListPage`: 상단에 역할별 통계 바(`usePromotionStats`) 추가 — CJ프레시웨이는 "승인 대기"(제안됨+검토중), 협력사는 "재제출 필요"(반려됨), 공통으로 "진행중" 건수. 클릭 시 필터링은 하지 않는(단순 표시) 것으로 범위를 좁혔다 — "승인 대기"는 두 상태의 합이라 목록 필터(단일 status)와 정확히 대응하지 않기 때문
+- **완료 조건**
+  - [x] 알림 벨의 숫자가 안읽은 개수와 일치하고, 알림을 클릭하면 개수가 줄어든다
+  - [x] `/notifications`에서 "모두 읽음으로 표시"를 누르면 모든 항목이 읽음 스타일로 바뀐다
+  - [x] 프로모션 상세에 등록일시/최종수정일시가 표시된다
+  - [x] 목록 상단에 역할에 맞는 통계 문구와 숫자가 표시된다
   - [x] 프론트엔드 빌드/테스트/lint가 통과한다
 
 ---

@@ -108,6 +108,44 @@ test('인증 없이 알림 조회 시 401이 반환된다', async () => {
   assert.strictEqual(res.status, 401);
 });
 
+test('알림은 기본적으로 is_read=false이고, 읽음 처리 API로 개별/전체 처리할 수 있다', async () => {
+  // notifyAllCjFreshway는 DB의 모든 cj_freshway 계정에 브로드캐스트하므로, 동시에 실행되는
+  // 다른 테스트 파일이 이 cj 계정에도 알림을 추가할 수 있다 — 그래서 전체 개수(unread-count,
+  // 목록 length)로 단언하지 않고, 이 테스트가 만든 특정 알림 2건만 id로 추적해서 확인한다.
+  const partner = await signupAndLogin('partner');
+  const cj = await signupAndLogin('cj_freshway');
+
+  const p1 = await createPromotion(partner.token, { start_date: '2096-08-01', end_date: '2096-08-05' });
+  const p2 = await createPromotion(partner.token, { start_date: '2096-09-01', end_date: '2096-09-05' });
+
+  const before = await (await getNotifications(cj.token, '?limit=50')).json();
+  const n1 = before.find((n) => n.promotion_id === p1.id);
+  const n2 = before.find((n) => n.promotion_id === p2.id);
+  assert.strictEqual(n1.is_read, false);
+  assert.strictEqual(n2.is_read, false);
+
+  const markOne = await patch(cj.token, `/notifications/${n1.id}/read`);
+  assert.strictEqual(markOne.status, 200);
+
+  const afterOne = await (await getNotifications(cj.token, '?limit=50')).json();
+  assert.strictEqual(afterOne.find((n) => n.id === n1.id).is_read, true);
+  assert.strictEqual(afterOne.find((n) => n.id === n2.id).is_read, false);
+
+  const markAll = await patch(cj.token, '/notifications/read-all');
+  assert.strictEqual(markAll.status, 200);
+
+  const afterAll = await (await getNotifications(cj.token, '?limit=50')).json();
+  assert.strictEqual(afterAll.find((n) => n.id === n1.id).is_read, true);
+  assert.strictEqual(afterAll.find((n) => n.id === n2.id).is_read, true);
+
+  const unreadCountRes = await fetch(`${baseUrl}/notifications/unread-count`, {
+    headers: { Authorization: `Bearer ${cj.token}` },
+  });
+  assert.strictEqual(unreadCountRes.status, 200);
+  const unreadCount = await unreadCountRes.json();
+  assert.strictEqual(typeof unreadCount.count, 'number');
+});
+
 test('타 사용자에게 온 알림은 조회되지 않는다', async () => {
   const partnerA = await signupAndLogin('partner');
   const partnerB = await signupAndLogin('partner');

@@ -25,4 +25,26 @@ async function listNotifications({ userId, limit }) {
   return result.rows;
 }
 
-module.exports = { notifyUser, notifyAllCjFreshway, listNotifications };
+async function countUnread({ userId }) {
+  const result = await pool.query(
+    'SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1 AND is_read = false',
+    [userId]
+  );
+  return result.rows[0].count;
+}
+
+async function markAsRead({ id, userId }) {
+  await pool.query(
+    'UPDATE notifications SET is_read = true WHERE id = $1 AND user_id = $2',
+    [id, userId]
+  );
+}
+
+async function markAllAsRead({ userId }) {
+  await pool.query(
+    'UPDATE notifications SET is_read = true WHERE user_id = $1 AND is_read = false',
+    [userId]
+  );
+}
+
+module.exports = { notifyUser, notifyAllCjFreshway, listNotifications, countUnread, markAsRead, markAllAsRead };

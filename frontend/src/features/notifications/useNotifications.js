@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../api/client';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -11,5 +11,37 @@ export function useNotifications(limit = 5) {
     queryFn: () => apiClient.get(`/notifications?limit=${limit}`),
     enabled: !!userId,
     refetchInterval: 30000,
+  });
+}
+
+export function useUnreadNotificationCount() {
+  const userId = useAuthStore((s) => s.user?.id);
+  return useQuery({
+    queryKey: ['notifications', userId, 'unread-count'],
+    queryFn: () => apiClient.get('/notifications/unread-count'),
+    enabled: !!userId,
+    refetchInterval: 30000,
+  });
+}
+
+function useInvalidateNotifications() {
+  const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.user?.id);
+  return () => queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
+}
+
+export function useMarkNotificationRead() {
+  const invalidate = useInvalidateNotifications();
+  return useMutation({
+    mutationFn: (id) => apiClient.patch(`/notifications/${id}/read`),
+    onSuccess: invalidate,
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const invalidate = useInvalidateNotifications();
+  return useMutation({
+    mutationFn: () => apiClient.patch('/notifications/read-all'),
+    onSuccess: invalidate,
   });
 }

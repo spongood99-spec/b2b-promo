@@ -30,6 +30,18 @@ async function list(req, res, next) {
   }
 }
 
+async function stats(req, res, next) {
+  try {
+    const stats = await promotionsService.getPromotionStats({
+      userId: req.user.id,
+      role: req.user.role,
+    });
+    res.status(200).json(stats);
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function getById(req, res, next) {
   try {
     const promotion = await promotionsService.getPromotionById({
@@ -116,4 +128,4 @@ async function resubmit(req, res, next) {
   }
 }
 
-module.exports = { create, list, getById, approve, reject, cancel, updateAndApprove, reopen, resubmit };
+module.exports = { create, list, stats, getById, approve, reject, cancel, updateAndApprove, reopen, resubmit };

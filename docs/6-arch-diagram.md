@@ -72,10 +72,12 @@ flowchart TD
     App --> PromotionForm["PromotionForm<br/>(features/promotions, /promotions/new 독립 라우트)"]
     App --> PromotionDetailPage["PromotionDetailPage<br/>(features/promotions)"]
     App --> CalendarPage["CalendarPage<br/>(features/calendar)"]
+    App --> NotificationsPage["NotificationsPage<br/>(features/notifications, /notifications, 2026-08-24 추가)"]
 
     LoginPage -.->|useAuth| AuthStore["authStore<br/>(stores, Zustand)"]
 
-    PromotionListPage -.->|usePromotions| Common["공통 컴포넌트<br/>(components: AppHeader, StatusBadge, ProtectedRoute)"]
+    PromotionListPage -.->|usePromotions, usePromotionStats| Common["공통 컴포넌트<br/>(components: AppHeader, StatusBadge, ProtectedRoute)"]
+    NotificationsPage -.->|useNotifications, useMarkNotificationRead 등| Common
     PromotionDetailPage --> ChangeRequestSection["ChangeRequestSection<br/>(features/changeRequests, 상세 화면 하단부 섹션)"]
     PromotionDetailPage -.->|usePromotionMutations| Common
     ChangeRequestSection -.->|useChangeRequests| Common
@@ -85,7 +87,7 @@ flowchart TD
     Common --> AppHeader["AppHeader<br/>(components, 모든 화면 상단 공통)"]
     AppHeader --> NotificationBell["NotificationBell<br/>(components, 2026-08-21 추가)"]
     AppHeader --> ChangePasswordModal["ChangePasswordModal<br/>(components, 2026-08-21 추가)"]
-    NotificationBell -.->|useNotifications| Common
+    NotificationBell -.->|useNotifications, useUnreadNotificationCount, useMarkNotificationRead| Common
     PromotionForm --> PromotionExtraFields["PromotionExtraFields<br/>(features/promotions, 13개 실무속성 입력, 2026-08-21 추가)"]
     PromotionDetailPage --> PromotionExtraFields
     ChangePasswordModal -.->|useModalA11y| A11yHook["useModalA11y<br/>(hooks, 포커스 이동/Esc닫기/Tab 포커스 트랩/포커스 복원, 2026-08-21 추가, 2026-08-24 Tab 트랩 보강)"]
@@ -94,3 +96,4 @@ flowchart TD
 
 > 참고: `PromotionForm`은 `PromotionDetailPage`의 자식 컴포넌트가 아니라 `/promotions/new`로 라우팅되는 별도 화면이다. `PromotionDetailPage`의 "수정 후 승인" 인라인 편집 모드는 `PromotionForm`을 재사용하지 않고 자체적으로 구현되어 있다(품목 추가/삭제 UI가 두 파일에 각각 존재).
 > `PromotionExtraFields`는 등록(`PromotionForm`)과 상세 편집(`PromotionDetailPage`의 "수정 후 승인"/"재제출") 양쪽에서 공유하는 컴포넌트다. JSX 없는 필드 변환 로직(`extraFieldsToPayload`/`extraFieldsFromPromotion` 등)은 `promotionExtraFieldsUtils.js`로 분리되어 있다(2026-08-21, Node 네이티브 테스트 러너로 번들러 없이 테스트하기 위한 목적).
+> **2026-08-24 추가**: `NotificationBell`은 안읽은 개수(`GET /notifications/unread-count`)를 뱃지로 표시하고, 알림 클릭 시 읽음 처리(`PATCH /notifications/:id/read`) 후 이동한다. "전체보기"를 누르면 `NotificationsPage`(최대 50건, 개별/전체 읽음 처리)로 이동한다. `PromotionListPage`는 `GET /promotions/stats`(역할별 범위의 상태별 건수)로 상단에 간단한 대시보드 통계 바를 표시한다. `PromotionDetailPage`와 `ChangeRequestSection`은 `promotions.created_at/updated_at`, `change_requests.created_at`을 표시해 간단한 변경이력을 보여준다(필드별 변경 전/후 값 비교는 아님).

@@ -181,6 +181,34 @@ test('q 파라미터로 조건 텍스트/품목명/제안자 소속사명을 검
   assert.strictEqual(noMatch.total, 0);
 });
 
+test('GET /promotions/stats는 역할별 범위로 상태별 건수를 반환한다', async () => {
+  const tokenA = await signupAndLogin('partner');
+  const tokenB = await signupAndLogin('partner');
+  const tokenCj = await signupAndLogin('cj_freshway');
+
+  const promoPayload = (start, end) => ({
+    start_date: start,
+    end_date: end,
+    condition: '조건',
+    items: [{ name: '품목' }],
+  });
+
+  await createPromotion(tokenA, promoPayload('2098-09-01', '2098-09-05'));
+  await createPromotion(tokenA, promoPayload('2098-09-10', '2098-09-15'));
+  await createPromotion(tokenB, promoPayload('2098-09-20', '2098-09-25'));
+
+  const statsA = await (await fetch(`${baseUrl}/promotions/stats`, {
+    headers: { Authorization: `Bearer ${tokenA}` },
+  })).json();
+  assert.strictEqual(statsA.proposed, 2);
+  assert.strictEqual(statsA.approved, undefined);
+
+  const statsCj = await (await fetch(`${baseUrl}/promotions/stats`, {
+    headers: { Authorization: `Bearer ${tokenCj}` },
+  })).json();
+  assert.ok(statsCj.proposed >= 3, '협력사 범위와 무관하게 전체 합계를 봐야 한다');
+});
+
 test('CJ프레시웨이 계정으로 등록 시도 시 403이 반환된다', async () => {
   const token = await signupAndLogin('cj_freshway');
 

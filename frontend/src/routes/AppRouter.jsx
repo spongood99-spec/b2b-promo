@@ -5,6 +5,7 @@ import { PromotionListPage } from '../features/promotions/PromotionListPage';
 import { PromotionDetailPage } from '../features/promotions/PromotionDetailPage';
 import { PromotionForm } from '../features/promotions/PromotionForm';
 import { CalendarPage } from '../features/calendar/CalendarPage';
+import { NotificationsPage } from '../features/notifications/NotificationsPage';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 
 function NotFoundPage() {
@@ -43,6 +44,14 @@ export function AppRouter() {
           element={
             <ProtectedRoute>
               <CalendarPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <NotificationsPage />
             </ProtectedRoute>
           }
         />

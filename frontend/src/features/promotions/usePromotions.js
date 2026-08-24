@@ -13,6 +13,14 @@ export function usePromotions(status, page = 1, limit = 20, q = '') {
   });
 }
 
+export function usePromotionStats() {
+  return useQuery({
+    queryKey: ['promotions', 'stats'],
+    queryFn: () => apiClient.get('/promotions/stats'),
+    refetchInterval: 30000,
+  });
+}
+
 export function usePromotion(id) {
   return useQuery({
     queryKey: ['promotion', id],

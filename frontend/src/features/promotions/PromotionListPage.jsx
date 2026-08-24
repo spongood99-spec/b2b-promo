@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { usePromotions } from './usePromotions';
+import { usePromotions, usePromotionStats } from './usePromotions';
 import { StatusBadge } from '../../components/StatusBadge';
 import { AppHeader } from '../../components/AppHeader';
 import './PromotionListPage.css';
@@ -54,6 +54,8 @@ export function PromotionListPage() {
   const [sortDir, setSortDir] = useState('asc');
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const statsQuery = usePromotionStats();
+  const stats = statsQuery.data ?? {};
   const query = usePromotions(status, page, PAGE_SIZE, q);
   const promotions = query.data?.items ?? [];
   const total = query.data?.total ?? 0;
@@ -82,6 +84,23 @@ export function PromotionListPage() {
   return (
     <div className="promotion-list-page">
       <AppHeader activeNav="list" />
+
+      {statsQuery.isSuccess && (
+        <div className="promotion-stats-bar">
+          {user?.role === 'cj_freshway' ? (
+            <span className="promotion-stat">
+              승인 대기 <strong>{(stats.proposed ?? 0) + (stats.in_review ?? 0)}</strong>건
+            </span>
+          ) : (
+            <span className="promotion-stat">
+              재제출 필요(반려됨) <strong>{stats.rejected ?? 0}</strong>건
+            </span>
+          )}
+          <span className="promotion-stat">
+            진행중 <strong>{stats.active ?? 0}</strong>건
+          </span>
+        </div>
+      )}
 
       <div className="promotion-list-toolbar">
         <form className="promotion-list-filters" onSubmit={handleSearchSubmit}>

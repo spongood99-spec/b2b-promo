@@ -59,3 +59,21 @@
   padding: var(--space-2);
   margin: 0;
 }
+
+.notification-unread {
+  font-weight: var(--weight-bold, 700);
+  background: var(--color-primary-soft);
+}
+
+.notification-view-all {
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: var(--text-sm);
+  padding: var(--space-2);
+  margin-top: var(--space-1);
+  cursor: pointer;
+  text-align: center;
+}

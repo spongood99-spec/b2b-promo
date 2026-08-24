@@ -335,6 +335,22 @@ async function listPromotions({ userId, role, status, from, to, page, limit, q }
   return { items, total, page: pageNum, limit: limitNum };
 }
 
+async function getPromotionStats({ userId, role }) {
+  const params = [];
+  let where = '';
+  if (role === 'partner') {
+    params.push(userId);
+    where = 'WHERE proposer_id = $1';
+  }
+  const result = await pool.query(
+    `SELECT status, COUNT(*)::int AS count FROM promotions ${where} GROUP BY status`,
+    params
+  );
+  const stats = {};
+  for (const row of result.rows) stats[row.status] = row.count;
+  return stats;
+}
+
 async function getPromotionById({ id, userId, role }) {
   const result = await pool.query(
     `SELECT p.*, u.company_name AS proposer_company_name
@@ -656,6 +672,7 @@ async function resubmitPromotion({ id, proposerId, start_date, end_date, conditi
 module.exports = {
   createPromotion,
   listPromotions,
+  getPromotionStats,
   getPromotionById,
   approvePromotion,
   rejectPromotion,

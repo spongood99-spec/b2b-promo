@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(auth);
 router.post('/', requireRole('partner'), ctrl.create);
 router.get('/', ctrl.list);
+router.get('/stats', ctrl.stats);
 router.get('/:id', ctrl.getById);
 router.patch('/:id/approve', requireRole('cj_freshway'), ctrl.approve);
 router.patch('/:id/reject', requireRole('cj_freshway'), ctrl.reject);

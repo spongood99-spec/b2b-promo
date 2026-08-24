@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useChangeRequests, useCreateChangeRequest, useUpdateChangeRequestStatus } from './useChangeRequests';
 
+function formatDateTime(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 const APPLY_STATUS_LABELS = { pending: '대기', applied: '반영완료', rejected: '반영거부' };
 const APPLY_STATUS_ORDER = ['pending', 'applied', 'rejected'];
 
@@ -48,7 +54,7 @@ export function ChangeRequestSection({ promotionId }) {
   if (query.isLoading) return <p>변경요청 이력을 불러오는 중...</p>;
   if (query.isError) return <p>{query.error?.message}</p>;
 
-  // ponytail: no created_at column, relies on insertion-order SELECT — reverse assumes DB returns oldest-first (default sort)
+  // 백엔드는 created_at 오름차순(오래된 것 먼저)으로 반환하므로, 기본 정렬(최신순)을 위해 뒤집는다.
   const baseHistory = [...(query.data ?? [])].reverse();
   const sortOption = CR_SORT_OPTIONS.find((o) => o.key === sortKey);
   const history =
@@ -108,6 +114,7 @@ export function ChangeRequestSection({ promotionId }) {
           <li key={cr.id} className="cr-item">
             <div className="cr-item-meta">
               <span>{cr.requester_company_name}</span>
+              <span className="cr-item-time">{formatDateTime(cr.created_at)}</span>
               {cr.is_post_approval_change && <span className="cr-tag">승인후변경</span>}
             </div>
             <div className="cr-item-content">{cr.content}</div>
