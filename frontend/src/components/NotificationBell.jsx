@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../features/notifications/useNotifications';
 import './NotificationBell.css';
@@ -11,8 +11,27 @@ function formatTime(iso) {
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const containerRef = useRef(null);
   const query = useNotifications(5);
   const notifications = query.data ?? [];
+
+  useEffect(() => {
+    if (!open) return;
+    function handleOutsideClick(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
 
   function handleClick(notification) {
     setOpen(false);
@@ -22,20 +41,25 @@ export function NotificationBell() {
   }
 
   return (
-    <div className="notification-bell">
+    <div className="notification-bell" ref={containerRef}>
       <button type="button" className="btn-logout" onClick={() => setOpen(!open)}>
         알림 {notifications.length > 0 ? `(${notifications.length})` : ''}
       </button>
       {open && (
         <div className="notification-dropdown">
-          {notifications.length === 0 ? (
+          {query.isLoading && <p className="notification-empty">불러오는 중...</p>}
+          {query.isError && <p className="notification-empty">{query.error?.message}</p>}
+          {query.isSuccess && notifications.length === 0 && (
             <p className="notification-empty">알림이 없습니다</p>
-          ) : (
+          )}
+          {query.isSuccess && notifications.length > 0 && (
             <ul>
               {notifications.map((n) => (
-                <li key={n.id} onClick={() => handleClick(n)}>
-                  <span className="notification-message">{n.message}</span>
-                  <span className="notification-time">{formatTime(n.created_at)}</span>
+                <li key={n.id}>
+                  <button type="button" onClick={() => handleClick(n)}>
+                    <span className="notification-message">{n.message}</span>
+                    <span className="notification-time">{formatTime(n.created_at)}</span>
+                  </button>
                 </li>
               ))}
             </ul>

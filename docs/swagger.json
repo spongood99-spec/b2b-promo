@@ -333,6 +333,19 @@
         }
       }
     },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "로그아웃 (2026-08-21 추가)",
+        "description": "refresh_token 쿠키를 지운다. 서버에 별도 토큰 무효화 저장소는 없으므로, 이미 발급된 access token은 만료 전까지 유효하다(access token 만료시간은 짧게 유지).",
+        "responses": {
+          "200": {
+            "description": "로그아웃 성공",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" } } } } }
+          }
+        }
+      }
+    },
     "/auth/password": {
       "patch": {
         "tags": ["Auth"],

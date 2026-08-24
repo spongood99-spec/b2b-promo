@@ -21,6 +21,15 @@ async function parseErrorAndThrow(response) {
   throw error;
 }
 
+export async function logout() {
+  try {
+    await fetch(`${BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
+  } catch (err) {
+    // 로그아웃 API 실패는 클라이언트 상태 정리를 막을 이유가 없다 — 로그만 남긴다.
+    console.error('Logout request failed:', err);
+  }
+}
+
 export async function doRefresh() {
   let response;
   try {

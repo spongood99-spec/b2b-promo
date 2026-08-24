@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import { useToastStore } from '../stores/toastStore';
+import { useModalA11y } from '../hooks/useModalA11y';
 import '../features/auth/AuthForm.css';
 
 export function ChangePasswordModal({ onClose }) {
@@ -10,6 +11,7 @@ export function ChangePasswordModal({ onClose }) {
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   const [error, setError] = useState(null);
   const addToast = useToastStore((s) => s.addToast);
+  const firstFieldRef = useModalA11y(onClose);
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -48,6 +50,7 @@ export function ChangePasswordModal({ onClose }) {
             <label htmlFor="current-password">현재 비밀번호</label>
             <input
               id="current-password"
+              ref={firstFieldRef}
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}

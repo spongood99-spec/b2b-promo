@@ -20,5 +20,6 @@ const authRateLimit = rateLimit({
 router.post('/signup', authRateLimit, ctrl.signup);
 router.post('/login', authRateLimit, ctrl.login);
 router.post('/refresh', ctrl.refresh);
+router.post('/logout', ctrl.logout);
 router.patch('/password', auth, ctrl.changePassword);
 module.exports = router;

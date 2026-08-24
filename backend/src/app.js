@@ -11,6 +11,15 @@ const promotionsRoutes = require('./routes/promotions.routes');
 const { promotionScoped: changeRequestsScoped, topLevel: changeRequestsTop } = require('./routes/changeRequests.routes');
 const notificationsRoutes = require('./routes/notifications.routes');
 
+// 필수 환경변수가 비어있으면(예: 배포 시 설정 누락) 첫 요청에서야 불명확하게 실패하는 대신
+// 즉시 기동을 중단해 배포 실수를 바로 드러낸다.
+const REQUIRED_ENV_VARS = ['DATABASE_URL', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'CORS_ORIGIN'];
+const missingEnvVars = REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
+if (missingEnvVars.length > 0) {
+  console.error(`필수 환경변수가 설정되지 않았습니다: ${missingEnvVars.join(', ')}`);
+  process.exit(1);
+}
+
 const app = express();
 
 app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));

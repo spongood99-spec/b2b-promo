@@ -57,4 +57,10 @@ async function changePassword(req, res, next) {
   }
 }
 
-module.exports = { signup, login, refresh, changePassword };
+function logout(req, res) {
+  // path를 REFRESH_COOKIE_OPTIONS와 동일하게 지정해야 브라우저가 같은 쿠키로 인식해 지운다.
+  res.clearCookie('refresh_token', { path: '/auth/refresh' });
+  res.status(200).json({ message: '로그아웃되었습니다' });
+}
+
+module.exports = { signup, login, refresh, changePassword, logout };

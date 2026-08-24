@@ -48,6 +48,26 @@ after(async () => {
   await new Promise((resolve) => server.close(resolve));
 });
 
+test('회원가입 시 비밀번호가 8자 미만이면 400이 반환된다', async () => {
+  const res = await signup(uniqueEmail(), 'short');
+  assert.strictEqual(res.status, 400);
+});
+
+test('로그아웃 호출 시 refresh_token 쿠키가 지워진다', async () => {
+  const email = uniqueEmail();
+  await signup(email);
+  const loginRes = await login(email);
+  const refreshCookie = extractRefreshCookie(loginRes);
+
+  const logoutRes = await fetch(`${baseUrl}/auth/logout`, {
+    method: 'POST',
+    headers: { Cookie: refreshCookie },
+  });
+  assert.strictEqual(logoutRes.status, 200);
+  const setCookie = logoutRes.headers.get('set-cookie') || '';
+  assert.match(setCookie, /refresh_token=;/);
+});
+
 test('회원가입 성공 후 동일 이메일 재가입 시 409', async () => {
   const email = uniqueEmail();
 

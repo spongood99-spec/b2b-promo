@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { logout } from '../api/client';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { NotificationBell } from './NotificationBell';
 import './AppHeader.css';
@@ -10,7 +11,8 @@ export function AppHeader({ activeNav }) {
   const user = useAuthStore((s) => s.user);
   const [showChangePassword, setShowChangePassword] = useState(false);
 
-  function handleLogout() {
+  async function handleLogout() {
+    await logout();
     useAuthStore.getState().clearAuth();
     navigate('/login');
   }

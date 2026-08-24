@@ -23,6 +23,12 @@ async function signup({ role, company_name, email, password }) {
     err.code = 'VALIDATION_ERROR';
     throw err;
   }
+  if (password.length < 8) {
+    const err = new Error('비밀번호는 8자 이상이어야 합니다');
+    err.status = 400;
+    err.code = 'VALIDATION_ERROR';
+    throw err;
+  }
 
   const passwordHash = await bcrypt.hash(password, 10);
 

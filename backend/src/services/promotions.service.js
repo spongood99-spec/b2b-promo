@@ -55,6 +55,13 @@ const EXTRA_FIELDS = [
   'attachment_url',
 ];
 
+const NON_NEGATIVE_NUMERIC_FIELDS = {
+  discount_value: '할인값',
+  moq: '최소주문수량',
+  available_qty: '공급가능수량',
+  lead_time_days: '리드타임',
+};
+
 function validateExtraFields(payload) {
   if (payload.discount_type != null && !DISCOUNT_TYPES.includes(payload.discount_type)) {
     throw validationError('할인유형 값이 올바르지 않습니다');
@@ -66,6 +73,13 @@ function validateExtraFields(payload) {
     const pct = Number(payload.partner_cost_share_pct);
     if (Number.isNaN(pct) || pct < 0 || pct > 100) {
       throw validationError('협력사부담율은 0~100 사이 숫자여야 합니다');
+    }
+  }
+  for (const [field, label] of Object.entries(NON_NEGATIVE_NUMERIC_FIELDS)) {
+    if (payload[field] == null) continue;
+    const value = Number(payload[field]);
+    if (!Number.isFinite(value) || value < 0) {
+      throw validationError(`${label}은 0 이상의 숫자여야 합니다`);
     }
   }
 }

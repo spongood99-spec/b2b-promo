@@ -12,6 +12,7 @@ import {
 } from './usePromotionMutations';
 import { StatusBadge } from '../../components/StatusBadge';
 import { ChangeRequestSection } from '../changeRequests/ChangeRequestSection';
+import { useModalA11y } from '../../hooks/useModalA11y';
 import {
   PromotionExtraFields,
   PromotionExtraFieldsView,
@@ -46,6 +47,12 @@ export function PromotionDetailPage() {
   const [modalType, setModalType] = useState(null); // null | 'reject' | 'cancel'
   const [reasonText, setReasonText] = useState('');
   const [actionError, setActionError] = useState(null);
+
+  function closeReasonModal() {
+    setModalType(null);
+    setReasonText('');
+  }
+  const reasonFieldRef = useModalA11y(closeReasonModal, !!modalType);
 
   const approveMutation = useApprovePromotion(id);
   const rejectMutation = useRejectPromotion(id);
@@ -164,10 +171,7 @@ export function PromotionDetailPage() {
     setActionError(null);
     const mutation = modalType === 'reject' ? rejectMutation : cancelMutation;
     mutation.mutate(reasonText, {
-      onSuccess: () => {
-        setModalType(null);
-        setReasonText('');
-      },
+      onSuccess: closeReasonModal,
       onError: (err) => setActionError(err.message),
     });
   }
@@ -359,6 +363,7 @@ export function PromotionDetailPage() {
           <div className="modal-box">
             <h2 id="reason-modal-title">{modalType === 'reject' ? '반려 사유' : '프로모션 취소 사유'}</h2>
             <textarea
+              ref={reasonFieldRef}
               aria-labelledby="reason-modal-title"
               value={reasonText}
               onChange={(e) => setReasonText(e.target.value)}
@@ -373,14 +378,7 @@ export function PromotionDetailPage() {
               >
                 확인
               </button>
-              <button
-                type="button"
-                className="btn-cancel"
-                onClick={() => {
-                  setModalType(null);
-                  setReasonText('');
-                }}
-              >
+              <button type="button" className="btn-cancel" onClick={closeReasonModal}>
                 취소
               </button>
             </div>

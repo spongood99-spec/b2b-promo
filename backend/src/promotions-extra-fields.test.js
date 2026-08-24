@@ -107,6 +107,25 @@ test('잘못된 할인유형/프로모션유형/부담율은 400을 반환한다
   assert.strictEqual(badPct.status, 400);
 });
 
+test('음수/비정상 숫자 실무필드는 400을 반환한다', async () => {
+  const partner = await signupAndLogin('partner');
+
+  const negativeMoq = await createPromotion(partner.token, { moq: -10 });
+  assert.strictEqual(negativeMoq.status, 400);
+
+  const negativeQty = await createPromotion(partner.token, { available_qty: -1 });
+  assert.strictEqual(negativeQty.status, 400);
+
+  const negativeLeadTime = await createPromotion(partner.token, { lead_time_days: -3 });
+  assert.strictEqual(negativeLeadTime.status, 400);
+
+  const negativeDiscount = await createPromotion(partner.token, { discount_value: -5 });
+  assert.strictEqual(negativeDiscount.status, 400);
+
+  const validZero = await createPromotion(partner.token, { moq: 0 });
+  assert.strictEqual(validZero.status, 201);
+});
+
 test('CJ프레시웨이가 "수정 후 승인" 시 선택 필드를 함께 수정할 수 있다', async () => {
   const partner = await signupAndLogin('partner');
   const cj = await signupAndLogin('cj_freshway');
