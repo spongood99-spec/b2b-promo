@@ -16,6 +16,11 @@
   display: flex;
   gap: var(--space-4);
   flex: 1;
+  flex-wrap: wrap;
+}
+
+.app-nav a {
+  white-space: nowrap;
 }
 
 .app-nav-current {

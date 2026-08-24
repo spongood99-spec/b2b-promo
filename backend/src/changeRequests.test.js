@@ -128,6 +128,21 @@ test('필수값(content) 없이 변경요청 등록 시 400이 반환된다', as
   assert.strictEqual(res.status, 400);
 });
 
+test('이미 처리된 변경요청은 재처리할 수 없다(반복 클릭/뒤로가기로 상태가 뒤집히는 것을 방지)', async () => {
+  const partner = await signupAndLogin('partner');
+  const cj = await signupAndLogin('cj_freshway');
+  const promotion = await createPromotion(partner.token, { start_date: '2097-06-01', end_date: '2097-06-05' });
+
+  const crRes = await post(partner.token, `/promotions/${promotion.id}/change-requests`, { content: '재처리 방지 테스트' });
+  const cr = await crRes.json();
+
+  const first = await patch(cj.token, `/change-requests/${cr.id}`, { apply_status: 'applied' });
+  assert.strictEqual(first.status, 200);
+
+  const second = await patch(cj.token, `/change-requests/${cr.id}`, { apply_status: 'rejected' });
+  assert.strictEqual(second.status, 409);
+});
+
 test('다른 협력사의 프로모션에 변경요청을 등록하려 하면 403이 반환된다(IDOR 방지)', async () => {
   const partnerA = await signupAndLogin('partner');
   const partnerB = await signupAndLogin('partner');

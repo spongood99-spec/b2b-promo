@@ -58,8 +58,11 @@ async function changePassword(req, res, next) {
 }
 
 function logout(req, res) {
-  // path를 REFRESH_COOKIE_OPTIONS와 동일하게 지정해야 브라우저가 같은 쿠키로 인식해 지운다.
-  res.clearCookie('refresh_token', { path: '/auth/refresh' });
+  // path뿐 아니라 sameSite/secure/httpOnly도 로그인 때 실제로 심은 쿠키(REFRESH_COOKIE_OPTIONS)와
+  // 동일해야 브라우저가 같은 쿠키로 인식해 지운다. 운영에서는 SameSite=None; Secure로 심었으므로
+  // 이 속성 없이 clearCookie를 호출하면 크로스사이트 컨텍스트에서 삭제 지시가 무시되어
+  // 로그아웃 후에도 refresh token이 계속 유효하게 남는다.
+  res.clearCookie('refresh_token', REFRESH_COOKIE_OPTIONS);
   res.status(200).json({ message: '로그아웃되었습니다' });
 }
 

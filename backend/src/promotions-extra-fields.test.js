@@ -126,6 +126,42 @@ test('음수/비정상 숫자 실무필드는 400을 반환한다', async () => 
   assert.strictEqual(validZero.status, 201);
 });
 
+test('정수 컬럼(moq/available_qty/lead_time_days)에 소수나 int4 범위 초과값을 보내면 400을 반환한다(DB 500 대신)', async () => {
+  const partner = await signupAndLogin('partner');
+
+  const decimalMoq = await createPromotion(partner.token, { moq: 0.5 });
+  assert.strictEqual(decimalMoq.status, 400);
+
+  const overflowQty = await createPromotion(partner.token, { available_qty: 1e10 });
+  assert.strictEqual(overflowQty.status, 400);
+});
+
+test('종료일이 시작일보다 이전이면 400을 반환한다(DB 500 대신)', async () => {
+  const partner = await signupAndLogin('partner');
+
+  const res = await createPromotion(partner.token, { start_date: '2095-08-10', end_date: '2095-08-01' });
+  assert.strictEqual(res.status, 400);
+});
+
+test('품목명이 빈 문자열이면 400, 품목이 51개 이상이면 400을 반환한다', async () => {
+  const partner = await signupAndLogin('partner');
+
+  const emptyName = await createPromotion(partner.token, { items: [{ name: '' }] });
+  assert.strictEqual(emptyName.status, 400);
+
+  const tooMany = await createPromotion(partner.token, {
+    items: Array.from({ length: 51 }, (_, i) => ({ name: `품목${i}` })),
+  });
+  assert.strictEqual(tooMany.status, 400);
+});
+
+test('실무필드 문자열 길이 제한(contact_name 등)을 초과하면 400을 반환한다(DB 500 대신)', async () => {
+  const partner = await signupAndLogin('partner');
+
+  const res = await createPromotion(partner.token, { contact_name: 'a'.repeat(101) });
+  assert.strictEqual(res.status, 400);
+});
+
 test('CJ프레시웨이가 "수정 후 승인" 시 선택 필드를 함께 수정할 수 있다', async () => {
   const partner = await signupAndLogin('partner');
   const cj = await signupAndLogin('cj_freshway');

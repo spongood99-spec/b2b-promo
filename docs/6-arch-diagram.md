@@ -52,7 +52,10 @@ sequenceDiagram
     C->>S: POST /auth/logout (2026-08-21 추가)
     S-->>C: refresh_token 쿠키 삭제
     Note over S: 서버측 토큰 무효화 저장소는 없음(access token은 짧은 만료로 대응).<br/>로그아웃해도 이미 발급된 access token은 자연 만료 전까지 유효
+    Note over S: 2026-08-24: clearCookie가 로그인 때 심은 쿠키와 동일한<br/>sameSite/secure/httpOnly 옵션으로 호출되어야 브라우저가<br/>같은 쿠키로 인식해 지운다(속성이 다르면 크로스사이트<br/>컨텍스트에서 삭제 지시가 무시됨 — 실제 발견된 버그를 수정)
 ```
+
+> **2026-08-24 토큰 종류 구분**: access/refresh JWT payload에 `type: 'access'`/`type: 'refresh'` 클레임을 추가하고, `middlewares/auth.js`는 `type==='access'`만, `/auth/refresh`는 `type==='refresh'`만 허용한다. access/refresh 시크릿이 운영에서 우연히 같은 값이 되어도 한 토큰을 다른 용도로 재사용할 수 없도록 하는 방어책이다(전체 회귀 테스트에서 refresh token이 access token 자리에서도 통과하는 것을 발견해 추가).
 
 ## 3. 프론트엔드 컴포넌트 구조
 
@@ -83,7 +86,7 @@ flowchart TD
     NotificationBell -.->|useNotifications| Common
     PromotionForm --> PromotionExtraFields["PromotionExtraFields<br/>(features/promotions, 13개 실무속성 입력, 2026-08-21 추가)"]
     PromotionDetailPage --> PromotionExtraFields
-    ChangePasswordModal -.->|useModalA11y| A11yHook["useModalA11y<br/>(hooks, 포커스 이동/Esc닫기/포커스 복원, 2026-08-21 추가)"]
+    ChangePasswordModal -.->|useModalA11y| A11yHook["useModalA11y<br/>(hooks, 포커스 이동/Esc닫기/Tab 포커스 트랩/포커스 복원, 2026-08-21 추가, 2026-08-24 Tab 트랩 보강)"]
     PromotionDetailPage -.->|useModalA11y 반려·취소 사유 모달| A11yHook
 ```
 

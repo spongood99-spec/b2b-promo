@@ -29,7 +29,7 @@ export function SignupPage() {
       <div className="auth-card">
         <h1 className="auth-title">CJ프레시웨이 프로모션 협업 앱</h1>
         <form className="auth-form" onSubmit={handleSubmit}>
-          {errorMessage && <div className="form-error">{errorMessage}</div>}
+          {errorMessage && <div className="form-error" role="alert">{errorMessage}</div>}
           <div className="form-field">
             <label>역할</label>
             <div className="form-field-radio-group">

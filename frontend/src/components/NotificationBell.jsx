@@ -12,8 +12,14 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const containerRef = useRef(null);
+  const triggerRef = useRef(null);
   const query = useNotifications(5);
   const notifications = query.data ?? [];
+
+  function close() {
+    setOpen(false);
+    triggerRef.current?.focus();
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -23,7 +29,7 @@ export function NotificationBell() {
       }
     }
     function handleKeyDown(e) {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') close();
     }
     document.addEventListener('mousedown', handleOutsideClick);
     document.addEventListener('keydown', handleKeyDown);
@@ -42,7 +48,7 @@ export function NotificationBell() {
 
   return (
     <div className="notification-bell" ref={containerRef}>
-      <button type="button" className="btn-logout" onClick={() => setOpen(!open)}>
+      <button type="button" className="btn-logout" ref={triggerRef} onClick={() => setOpen(!open)}>
         알림 {notifications.length > 0 ? `(${notifications.length})` : ''}
       </button>
       {open && (

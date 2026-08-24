@@ -74,7 +74,7 @@ export function PromotionForm() {
       </div>
 
       <form className="auth-form promotion-form" onSubmit={handleSubmit}>
-        {formError && <div className="form-error">{formError}</div>}
+        {formError && <div className="form-error" role="alert">{formError}</div>}
 
         <div className="form-field-row">
           <div className="form-field">

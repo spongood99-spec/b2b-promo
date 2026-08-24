@@ -24,6 +24,12 @@ function forbiddenError(message) {
   err.code = 'FORBIDDEN';
   return err;
 }
+function invalidTransition(message) {
+  const err = new Error(message);
+  err.status = 409;
+  err.code = 'INVALID_TRANSITION';
+  return err;
+}
 
 async function createChangeRequest({ promotionId, requesterId, content }) {
   if (!content) throw validationError('변경 요청 내용은 필수입니다');
@@ -60,12 +66,12 @@ async function listChangeRequestsByPromotion({ promotionId, userId, role }) {
   if (role === 'partner' && promoRes.rows[0].proposer_id !== userId) {
     throw forbiddenError('접근 권한이 없습니다');
   }
-  // ponytail: no created_at column, relies on insertion-order SELECT; add created_at + ORDER BY if this ever breaks
   const res = await pool.query(
     `SELECT cr.*, u.company_name AS requester_company_name
      FROM change_requests cr
      JOIN users u ON u.id = cr.requester_id
-     WHERE cr.promotion_id = $1`,
+     WHERE cr.promotion_id = $1
+     ORDER BY cr.created_at`,
     [promotionId]
   );
   return res.rows;
@@ -75,12 +81,17 @@ async function updateChangeRequestStatus({ id, apply_status }) {
   if (!['applied', 'rejected'].includes(apply_status)) {
     throw validationError('apply_status는 applied 또는 rejected여야 합니다');
   }
-  // ponytail: 이미 처리된(applied/rejected) 건 재처리 방지 로직 없음, 필요시 상태 가드 추가
+  // 이미 처리된(applied/rejected) 건은 재처리를 막는다 — 막지 않으면 중복 클릭/뒤로가기로
+  // 상태가 반복 뒤집히고 그때마다 알림이 중복 발송된다.
   const res = await pool.query(
-    'UPDATE change_requests SET apply_status = $1 WHERE id = $2 RETURNING *',
+    "UPDATE change_requests SET apply_status = $1 WHERE id = $2 AND apply_status = 'pending' RETURNING *",
     [apply_status, id]
   );
-  if (res.rows.length === 0) throw notFoundError('변경요청을 찾을 수 없습니다');
+  if (res.rows.length === 0) {
+    const existing = await pool.query('SELECT id FROM change_requests WHERE id = $1', [id]);
+    if (existing.rows.length === 0) throw notFoundError('변경요청을 찾을 수 없습니다');
+    throw invalidTransition('이미 처리된 변경요청입니다');
+  }
 
   const changeRequest = res.rows[0];
   await notificationsService

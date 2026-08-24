@@ -36,8 +36,23 @@ CREATE TABLE promotions (
     target_channel          varchar(200),
     attachment_url           varchar(500),
 
+    created_at     timestamptz NOT NULL DEFAULT now(),
+    updated_at     timestamptz NOT NULL DEFAULT now(),
+
     CHECK (end_date >= start_date)
 );
+
+-- 상태/내용이 바뀔 때마다 updated_at을 갱신한다(도메인정의서 5장 Do 규칙: 변경 시각 기록).
+CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_promotions_updated_at
+BEFORE UPDATE ON promotions
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 CREATE TABLE items (
     id   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -58,7 +73,8 @@ CREATE TABLE change_requests (
     content                  text NOT NULL,
     apply_status             varchar(20) NOT NULL DEFAULT 'pending'
                              CHECK (apply_status IN ('pending', 'applied', 'rejected')),
-    is_post_approval_change  boolean NOT NULL DEFAULT false
+    is_post_approval_change  boolean NOT NULL DEFAULT false,
+    created_at               timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE notifications (

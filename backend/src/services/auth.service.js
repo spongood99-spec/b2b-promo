@@ -5,14 +5,14 @@ const pool = require('../db/pool');
 const VALID_ROLES = ['partner', 'cj_freshway'];
 
 function signAccessToken(user) {
-  return jwt.sign({ sub: user.id, role: user.role }, process.env.JWT_ACCESS_SECRET, {
+  return jwt.sign({ sub: user.id, role: user.role, type: 'access' }, process.env.JWT_ACCESS_SECRET, {
     algorithm: 'HS256',
     expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m',
   });
 }
 
 function signRefreshToken(user) {
-  return jwt.sign({ sub: user.id, role: user.role }, process.env.JWT_REFRESH_SECRET, {
+  return jwt.sign({ sub: user.id, role: user.role, type: 'refresh' }, process.env.JWT_REFRESH_SECRET, {
     algorithm: 'HS256',
     expiresIn: process.env.JWT_REFRESH_EXPIRES || '7d',
   });
@@ -27,6 +27,12 @@ async function signup({ role, company_name, email, password }) {
   }
   if (password.length < 8) {
     const err = new Error('비밀번호는 8자 이상이어야 합니다');
+    err.status = 400;
+    err.code = 'VALIDATION_ERROR';
+    throw err;
+  }
+  if (company_name.length > 100 || email.length > 255) {
+    const err = new Error('회사명은 100자, 이메일은 255자를 초과할 수 없습니다');
     err.status = 400;
     err.code = 'VALIDATION_ERROR';
     throw err;
@@ -104,6 +110,11 @@ async function refresh(refreshTokenCookie) {
   try {
     payload = jwt.verify(refreshTokenCookie, process.env.JWT_REFRESH_SECRET, { algorithms: ['HS256'] });
   } catch (err) {
+    throw unauthorized();
+  }
+  // access/refresh 시크릿이 운영에서 우연히 같은 값이더라도 access token으로 refresh를
+  // 시도할 수 없도록 토큰 종류를 명시적으로 구분한다.
+  if (payload.type !== 'refresh') {
     throw unauthorized();
   }
 

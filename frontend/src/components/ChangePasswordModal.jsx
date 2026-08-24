@@ -11,7 +11,7 @@ export function ChangePasswordModal({ onClose }) {
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   const [error, setError] = useState(null);
   const addToast = useToastStore((s) => s.addToast);
-  const firstFieldRef = useModalA11y(onClose);
+  const { firstFieldRef, containerRef } = useModalA11y(onClose);
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -42,10 +42,10 @@ export function ChangePasswordModal({ onClose }) {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-box">
+      <div className="modal-box" ref={containerRef}>
         <h2>비밀번호 변경</h2>
         <form onSubmit={handleSubmit} className="auth-form">
-          {error && <div className="form-error">{error}</div>}
+          {error && <div className="form-error" role="alert">{error}</div>}
           <div className="form-field">
             <label htmlFor="current-password">현재 비밀번호</label>
             <input

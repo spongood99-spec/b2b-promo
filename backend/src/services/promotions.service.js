@@ -62,6 +62,19 @@ const NON_NEGATIVE_NUMERIC_FIELDS = {
   lead_time_days: '리드타임',
 };
 
+// DB integer 컬럼(moq/available_qty/lead_time_days)은 소수/int4 범위 초과 값을 받으면
+// 애플리케이션 검증 없이 DB로 내려가 500(22P02/22003)이 나므로, 여기서 먼저 걸러낸다.
+const INTEGER_FIELDS = new Set(['moq', 'available_qty', 'lead_time_days']);
+const MAX_INT4 = 2147483647;
+
+// varchar 컬럼 길이 제한(docs/8-schema.sql)을 애플리케이션에서도 검증해 500(22001) 대신 400을 반환한다.
+const STRING_LENGTH_LIMITS = {
+  contact_name: 100,
+  contact_phone: 50,
+  target_channel: 200,
+  attachment_url: 500,
+};
+
 function validateExtraFields(payload) {
   if (payload.discount_type != null && !DISCOUNT_TYPES.includes(payload.discount_type)) {
     throw validationError('할인유형 값이 올바르지 않습니다');
@@ -80,6 +93,39 @@ function validateExtraFields(payload) {
     const value = Number(payload[field]);
     if (!Number.isFinite(value) || value < 0) {
       throw validationError(`${label}은 0 이상의 숫자여야 합니다`);
+    }
+    if (INTEGER_FIELDS.has(field) && (!Number.isInteger(value) || value > MAX_INT4)) {
+      throw validationError(`${label}은 정수여야 하며 너무 큰 값일 수 없습니다`);
+    }
+  }
+  for (const [field, maxLength] of Object.entries(STRING_LENGTH_LIMITS)) {
+    if (payload[field] != null && String(payload[field]).length > maxLength) {
+      throw validationError(`${field} 값이 너무 길습니다(최대 ${maxLength}자)`);
+    }
+  }
+}
+
+function validateDateOrder(startDate, endDate) {
+  if (startDate && endDate && String(endDate) < String(startDate)) {
+    throw validationError('종료일은 시작일보다 이전일 수 없습니다');
+  }
+}
+
+const MAX_ITEMS = 50;
+
+function validateItems(items) {
+  if (items.length > MAX_ITEMS) {
+    throw validationError(`품목은 최대 ${MAX_ITEMS}개까지 등록할 수 있습니다`);
+  }
+  for (const item of items) {
+    if (typeof item.name !== 'string' || item.name.trim() === '') {
+      throw validationError('품목명은 비어 있을 수 없습니다');
+    }
+    if (item.name.length > 200) {
+      throw validationError('품목명은 최대 200자까지 입력할 수 있습니다');
+    }
+    if (item.spec != null && String(item.spec).length > 100) {
+      throw validationError('품목 규격은 최대 100자까지 입력할 수 있습니다');
     }
   }
 }
@@ -146,6 +192,8 @@ async function createPromotion({ proposerId, start_date, end_date, condition, it
   if (!start_date || !end_date || !condition || !Array.isArray(items) || items.length === 0) {
     throw validationError('필수 항목이 누락되었습니다');
   }
+  validateDateOrder(start_date, end_date);
+  validateItems(items);
   validateExtraFields(extra);
 
   const client = await pool.connect();
@@ -391,6 +439,11 @@ async function updateAndApprovePromotion({ id, reviewerId, start_date, end_date,
   if (!canApprove(promotion.status)) {
     throw invalidTransition(`현재 상태(${promotion.status})에서는 승인할 수 없습니다`);
   }
+  validateDateOrder(
+    start_date !== undefined ? start_date : promotion.start_date,
+    end_date !== undefined ? end_date : promotion.end_date
+  );
+  if (Array.isArray(items)) validateItems(items);
   validateExtraFields(extra);
 
   const setClauses = [];
@@ -518,6 +571,8 @@ async function resubmitPromotion({ id, proposerId, start_date, end_date, conditi
   if (!start_date || !end_date || !condition || !Array.isArray(items) || items.length === 0) {
     throw validationError('필수 항목이 누락되었습니다');
   }
+  validateDateOrder(start_date, end_date);
+  validateItems(items);
   validateExtraFields(extra);
 
   const setClauses = ["start_date=$1", "end_date=$2", "condition=$3", "status='proposed'", "reject_reason=NULL"];

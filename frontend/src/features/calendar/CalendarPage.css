@@ -99,15 +99,20 @@
 }
 
 @media (max-width: 767px) {
-  .calendar-grid-month,
-  .calendar-grid-week,
-  .calendar-grid-day {
-    grid-template-columns: 1fr;
-  }
+  /* 요일(7열) 구조는 유지한다 — 1열로 접으면 어떤 날짜가 무슨 요일인지 알 수 없어진다.
+     대신 셀 크기/텍스트를 줄여서 좁은 화면에 맞춘다. */
   .calendar-weekday-label {
-    display: none;
+    font-size: var(--text-xs);
+    padding: var(--space-1);
   }
   .calendar-day {
-    min-height: auto;
+    min-height: 60px;
+    padding: var(--space-1);
+  }
+  .calendar-day-number {
+    font-size: var(--text-xs);
+  }
+  .calendar-promo-item {
+    font-size: var(--text-xs);
   }
 }

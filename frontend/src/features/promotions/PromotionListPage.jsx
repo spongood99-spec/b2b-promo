@@ -132,7 +132,7 @@ export function PromotionListPage() {
               <tr key={promotion.id}>
                 <td>
                   <Link className="row-link" to={`/promotions/${promotion.id}`}>
-                    {promotion.items?.[0]?.name}
+                    {promotion.items?.[0]?.name || '제목 없음'}
                     {promotion.items?.length > 1 ? ` 외 ${promotion.items.length - 1}건` : ''}
                   </Link>
                 </td>

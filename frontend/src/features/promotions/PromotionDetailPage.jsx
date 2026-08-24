@@ -52,7 +52,7 @@ export function PromotionDetailPage() {
     setModalType(null);
     setReasonText('');
   }
-  const reasonFieldRef = useModalA11y(closeReasonModal, !!modalType);
+  const { firstFieldRef: reasonFieldRef, containerRef: reasonModalRef } = useModalA11y(closeReasonModal, !!modalType);
 
   const approveMutation = useApprovePromotion(id);
   const rejectMutation = useRejectPromotion(id);
@@ -294,7 +294,7 @@ export function PromotionDetailPage() {
         </div>
       </div>
 
-      {actionError && <div className="form-error">{actionError}</div>}
+      {actionError && <div className="form-error" role="alert">{actionError}</div>}
 
       <div className="detail-actions">
         {user?.role === 'partner' ? (
@@ -360,7 +360,7 @@ export function PromotionDetailPage() {
 
       {modalType && (
         <div className="modal-overlay">
-          <div className="modal-box">
+          <div className="modal-box" ref={reasonModalRef}>
             <h2 id="reason-modal-title">{modalType === 'reject' ? '반려 사유' : '프로모션 취소 사유'}</h2>
             <textarea
               ref={reasonFieldRef}

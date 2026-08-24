@@ -53,7 +53,7 @@ test('위조된(다른 시크릿) 토큰이면 401/UNAUTHORIZED', () => {
 
 test('유효한 토큰이면 req.user 설정 후 next() 인자 없이 호출', () => {
   const token = jwt.sign(
-    { sub: 'user-1', role: 'partner' },
+    { sub: 'user-1', role: 'partner', type: 'access' },
     process.env.JWT_ACCESS_SECRET,
     { expiresIn: '15m' }
   );
@@ -67,4 +67,18 @@ test('유효한 토큰이면 req.user 설정 후 next() 인자 없이 호출', (
   assert.strictEqual(called, true);
   assert.strictEqual(arg, undefined);
   assert.deepStrictEqual(req.user, { id: 'user-1', role: 'partner' });
+});
+
+test('refresh token(type=refresh)은 access token으로 사용할 수 없다', () => {
+  const token = jwt.sign(
+    { sub: 'user-1', role: 'partner', type: 'refresh' },
+    process.env.JWT_ACCESS_SECRET,
+    { expiresIn: '15m' }
+  );
+  let err;
+  auth(makeReq({ authorization: `Bearer ${token}` }), {}, (e) => {
+    err = e;
+  });
+  assert.strictEqual(err.status, 401);
+  assert.strictEqual(err.code, 'UNAUTHORIZED');
 });

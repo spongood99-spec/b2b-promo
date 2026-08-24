@@ -53,11 +53,26 @@ test('회원가입 시 비밀번호가 8자 미만이면 400이 반환된다', a
   assert.strictEqual(res.status, 400);
 });
 
+test('회원가입 시 회사명/이메일이 컬럼 길이(100/255자)를 초과하면 400을 반환한다(DB 500 대신)', async () => {
+  const res = await fetch(`${baseUrl}/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      role: 'partner',
+      company_name: 'a'.repeat(101),
+      email: uniqueEmail(),
+      password: PASSWORD,
+    }),
+  });
+  assert.strictEqual(res.status, 400);
+});
+
 test('로그아웃 호출 시 refresh_token 쿠키가 지워진다', async () => {
   const email = uniqueEmail();
   await signup(email);
   const loginRes = await login(email);
   const refreshCookie = extractRefreshCookie(loginRes);
+  const loginSetCookie = loginRes.headers.get('set-cookie') || '';
 
   const logoutRes = await fetch(`${baseUrl}/auth/logout`, {
     method: 'POST',
@@ -66,6 +81,16 @@ test('로그아웃 호출 시 refresh_token 쿠키가 지워진다', async () =>
   assert.strictEqual(logoutRes.status, 200);
   const setCookie = logoutRes.headers.get('set-cookie') || '';
   assert.match(setCookie, /refresh_token=;/);
+
+  // 로그인 때 심은 쿠키와 동일한 Path/HttpOnly/SameSite/Secure 속성으로 지워야
+  // 브라우저(특히 크로스사이트 SameSite=None 컨텍스트)가 실제로 같은 쿠키로 인식해 삭제한다.
+  // 이 속성이 어긋나면 로그아웃 후에도 refresh token이 계속 유효하게 남는다.
+  for (const attr of ['Path=/auth/refresh', 'HttpOnly']) {
+    assert.ok(loginSetCookie.includes(attr), `login cookie should include ${attr}`);
+    assert.ok(setCookie.includes(attr), `logout clear-cookie should include ${attr}`);
+  }
+  const sameSiteMatch = (s) => (s.match(/SameSite=(\w+)/i) || [])[1];
+  assert.strictEqual(sameSiteMatch(setCookie), sameSiteMatch(loginSetCookie));
 });
 
 test('회원가입 성공 후 동일 이메일 재가입 시 409', async () => {
@@ -184,4 +209,31 @@ test('비밀번호 변경 시 새 비밀번호가 8자 미만이면 400', async 
     body: JSON.stringify({ current_password: PASSWORD, new_password: 'short' }),
   });
   assert.strictEqual(res.status, 400);
+});
+
+test('refresh token을 Authorization 헤더(access token 자리)에 넣으면 401이 반환된다', async () => {
+  const email = uniqueEmail();
+  await signup(email);
+  const loginRes = await login(email);
+  const refreshCookie = extractRefreshCookie(loginRes);
+  const refreshToken = refreshCookie.split('=')[1];
+
+  const res = await fetch(`${baseUrl}/promotions`, {
+    headers: { Authorization: `Bearer ${refreshToken}` },
+  });
+  assert.strictEqual(res.status, 401);
+});
+
+test('UUID 형식이 아닌 id로 프로모션을 조회하면 400(VALIDATION_ERROR)이 반환되고 내부 DB 에러코드가 노출되지 않는다', async () => {
+  const email = uniqueEmail();
+  await signup(email);
+  const loginRes = await login(email);
+  const { access_token } = await loginRes.json();
+
+  const res = await fetch(`${baseUrl}/promotions/not-a-uuid`, {
+    headers: { Authorization: `Bearer ${access_token}` },
+  });
+  assert.strictEqual(res.status, 400);
+  const body = await res.json();
+  assert.strictEqual(body.error.code, 'VALIDATION_ERROR');
 });

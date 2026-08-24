@@ -71,7 +71,7 @@ export function ChangeRequestSection({ promotionId }) {
 
       {user?.role === 'partner' && (
         <form className="auth-form cr-form" onSubmit={handleSubmit}>
-          {error && <div className="form-error">{error}</div>}
+          {error && <div className="form-error" role="alert">{error}</div>}
           <div className="form-field">
             <label htmlFor="change-request-content">변경 내용 입력</label>
             <input
@@ -87,7 +87,7 @@ export function ChangeRequestSection({ promotionId }) {
         </form>
       )}
 
-      {user?.role !== 'partner' && error && <div className="form-error">{error}</div>}
+      {user?.role !== 'partner' && error && <div className="form-error" role="alert">{error}</div>}
 
       <div className="cr-sort-bar">
         {CR_SORT_OPTIONS.map((option) => (
