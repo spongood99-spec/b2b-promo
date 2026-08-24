@@ -47,18 +47,26 @@ const PAGE_SIZE = 20;
 
 export function PromotionListPage() {
   const [status, setStatus] = useState('');
+  const [q, setQ] = useState('');
+  const [qInput, setQInput] = useState('');
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const query = usePromotions(status, page, PAGE_SIZE);
+  const query = usePromotions(status, page, PAGE_SIZE, q);
   const promotions = query.data?.items ?? [];
   const total = query.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   function handleStatusChange(value) {
     setStatus(value);
+    setPage(1);
+  }
+
+  function handleSearchSubmit(e) {
+    e.preventDefault();
+    setQ(qInput.trim());
     setPage(1);
   }
 
@@ -76,7 +84,7 @@ export function PromotionListPage() {
       <AppHeader activeNav="list" />
 
       <div className="promotion-list-toolbar">
-        <div className="promotion-list-filters">
+        <form className="promotion-list-filters" onSubmit={handleSearchSubmit}>
           <select
             className="status-filter-select"
             value={status}
@@ -89,10 +97,20 @@ export function PromotionListPage() {
             ))}
           </select>
 
-          <button type="button" className="btn-query" onClick={() => query.refetch()}>
+          <label className="visually-hidden" htmlFor="promotion-search">회사명/품목명/조건 검색</label>
+          <input
+            id="promotion-search"
+            type="search"
+            className="promotion-search-input"
+            placeholder="회사명/품목명/조건 검색"
+            value={qInput}
+            onChange={(e) => setQInput(e.target.value)}
+          />
+
+          <button type="submit" className="btn-query">
             조회
           </button>
-        </div>
+        </form>
 
         {user?.role === 'partner' && (
           <button
@@ -108,7 +126,7 @@ export function PromotionListPage() {
       {query.isLoading && <p>불러오는 중...</p>}
       {query.isError && <p>{query.error?.message}</p>}
       {query.isSuccess && promotions.length === 0 && (
-        <p>{status ? '선택한 상태의 프로모션이 없습니다' : '등록된 프로모션이 없습니다'}</p>
+        <p>{status || q ? '조건에 맞는 프로모션이 없습니다' : '등록된 프로모션이 없습니다'}</p>
       )}
 
       {query.isSuccess && promotions.length > 0 && (

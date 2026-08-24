@@ -1,4 +1,5 @@
 const express = require('express');
+const helmet = require('helmet');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const swaggerUi = require('swagger-ui-express');
@@ -22,6 +23,9 @@ if (missingEnvVars.length > 0) {
 
 const app = express();
 
+// CSP는 끈다 — 개발 모드에서만 마운트되는 /api-docs(swagger-ui-express)가 인라인 스크립트를
+// 써서 기본 CSP와 충돌한다. X-Frame-Options/X-Content-Type-Options/HSTS 등 나머지 방어 헤더는 유지.
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());

@@ -22,6 +22,7 @@ async function list(req, res, next) {
       to: req.query.to,
       page: req.query.page,
       limit: req.query.limit,
+      q: req.query.q,
     });
     res.status(200).json(promotions);
   } catch (err) {

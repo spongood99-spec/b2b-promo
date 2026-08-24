@@ -75,6 +75,7 @@ UI (컴포넌트/페이지)
 - **로깅**: `console.log`/`console.error` 수준의 최소 로깅으로 충분하다. 요청 진입 시 method+path, 에러 발생 시 스택트레이스 정도만 남긴다. 구조화 로깅(JSON), 분산 트레이싱, 로그 수집 인프라는 도입하지 않는다.
 - **배포**: 최초 설계는 단일 서버(Node.js 프로세스 하나 + PostgreSQL 하나) 전제였으나, 실제 운영은 프론트/백엔드가 각각 별도 Vercel 프로젝트로 분리 배포되고 DB는 Supabase Postgres다(`6-arch-diagram.md` 참고). 이중화, 로드밸런서, 오토스케일링, 캐시 레이어(Redis 등)는 여전히 만들지 않는다.
 - **비밀번호**: bcrypt로 해시 저장, 회원가입/변경 모두 8자 이상 강제(2026-08-21부터 회원가입도 동일 정책). 계정 단위 잠금, 2FA 등은 범위 밖(EC-06)이나, `/auth/login`·`/auth/signup`에는 IP 기준 rate limit(15분당 20회, 2026-08-21 추가)이 있어 무차별 대입에 대한 최소 방어선은 있다.
+- **HTTP 보안 헤더**: `helmet`(2026-08-24 추가)로 `X-Content-Type-Options`/`X-Frame-Options`/HSTS 등 기본 방어 헤더를 붙인다. CSP는 개발 모드에서만 마운트되는 `/api-docs`(swagger-ui-express)의 인라인 스크립트와 충돌해 끈다 — API가 거의 전부 JSON을 응답하므로 CSP 부재의 실질 영향은 제한적이다. 첨부링크(`attachment_url`)는 `http(s)://`로 시작하는 값만 허용한다(2026-08-24, `javascript:` 등 스킴 주입 방지).
 
 ## 6. 프론트엔드 디렉토리 구조
 

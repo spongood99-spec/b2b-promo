@@ -246,6 +246,18 @@ flowchart LR
   - [x] refresh token을 `Authorization` 헤더에 넣어도 보호된 엔드포인트에 접근할 수 없다
   - [x] 백엔드 테스트 100/100 통과(90 → 100, 이번 라운드에서 9건 추가 + 기존 토큰 테스트 1건 보강)
 
+### BE-17. (사용자 관점 분석 후속) 보안헤더 + 검색(FR-14) (2026-08-24 추가)
+- **선행 Task**: BE-16
+- **작업 내용**: 사용자 관점 단점/최신화/보안 분석에서 사용자가 우선 진행을 선택한 2건.
+  - `helmet` 도입(`app.js`) — CSP는 `/api-docs`(개발 모드 전용 swagger-ui)의 인라인 스크립트와 충돌해 끄고, 나머지 방어 헤더(`X-Content-Type-Options`/`X-Frame-Options`/HSTS 등)만 사용
+  - `attachment_url`에 `http(s)://` 스킴 검증 추가(`javascript:` 등 주입 방지)
+  - `GET /promotions`에 `q` 쿼리파라미터 추가(FR-14) — 조건 텍스트/품목명(EXISTS 서브쿼리)/제안자 소속사명 부분일치(ILIKE) 검색, 역할별 조회범위·상태필터와 AND로 결합. 구현 중 페이지네이션 COUNT 쿼리에 `users` JOIN이 빠져 있던 걸 발견해 함께 수정(그전엔 `q` 없이도 잠재적으로 문제 없었지만 `q` 추가 시 "테이블 u에 FROM 절이 빠져 있습니다" 500이 나는 걸로 테스트 중 발견)
+- **완료 조건**
+  - [x] 모든 응답에 `X-Content-Type-Options: nosniff`, `X-Frame-Options`가 포함된다
+  - [x] `attachment_url`에 `javascript:alert(1)` 같은 값을 보내면 400, `https://...`는 201
+  - [x] `q=조건일부`/`q=품목명일부`/`q=소속사명일부`로 각각 해당 프로모션만 걸러진다
+  - [x] 백엔드 테스트 100 → 103 통과
+
 ### FE-15. (Low) 프론트엔드 테스트 도입 (2026-08-21 추가)
 - **선행 Task**: FE-12
 - **작업 내용**: 프론트엔드에 처음으로 자동화 테스트를 도입했다. 번들러/새 의존성 없이 Node 내장 `node --test`로 돌리기 위해, JSX가 없는 순수 로직(`PromotionExtraFields.jsx`의 필드 변환 함수)을 `promotionExtraFieldsUtils.js`로 분리하고 그 파일만 테스트한다. Zustand 스토어(`authStore`)처럼 extension-less relative import를 쓰는 파일은 Node 네이티브 ESM 로더가 해석하지 못해(Vite는 되지만 Node는 확장자 필요) 이번 범위에서는 제외했다 — 번들러 인식 테스트 러너(vitest 등) 도입은 별도 결정 필요.
@@ -272,6 +284,14 @@ flowchart LR
   - [x] 375px 뷰포트에서 캘린더가 요일별 7열 구조를 유지한다
   - [x] 로그인 상태에서 `/login` 접근 시 `/`로 이동한다
   - [x] 프론트엔드 빌드(`npm run build`)/테스트(`npm test`)가 통과한다
+
+### FE-17. (사용자 관점 분석 후속) 목록 검색 UI (FR-14, 2026-08-24 추가)
+- **선행 Task**: FE-16, BE-17
+- **작업 내용**: `PromotionListPage.jsx`에 상태 필터 옆에 검색어 입력창을 추가하고, "조회" 버튼(또는 Enter)으로 상태+검색어를 함께 제출한다(`usePromotions`에 `q` 인자 추가, 쿼리키에 포함). 검색어 입력 자체는 로컬 상태(`qInput`)로 관리하고 제출 시에만 실제 쿼리에 반영해 매 타이핑마다 요청을 보내지 않는다.
+- **완료 조건**
+  - [x] 검색어를 입력하고 "조회"를 누르면 조건/품목명/제안자 소속사명에 매칭되는 프로모션만 표시된다
+  - [x] 검색 결과가 없으면 "조건에 맞는 프로모션이 없습니다"가 표시된다
+  - [x] 프론트엔드 빌드/테스트/lint가 통과한다
 
 ---
 

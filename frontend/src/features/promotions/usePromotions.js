@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../api/client';
 
-export function usePromotions(status, page = 1, limit = 20) {
+export function usePromotions(status, page = 1, limit = 20, q = '') {
   return useQuery({
-    queryKey: ['promotions', status, page, limit],
+    queryKey: ['promotions', status, page, limit, q],
     queryFn: () => {
       const params = new URLSearchParams({ page, limit });
       if (status) params.set('status', status);
+      if (q) params.set('q', q);
       return apiClient.get(`/promotions?${params.toString()}`);
     },
   });

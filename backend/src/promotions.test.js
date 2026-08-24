@@ -146,6 +146,41 @@ test('일반 목록 조회(from/to 없음)는 페이지네이션되어 items/tot
   assert.ok(!page2.items.some((p) => page1Ids.has(p.id)), '페이지 간 항목이 중복되지 않아야 한다');
 });
 
+test('q 파라미터로 조건 텍스트/품목명/제안자 소속사명을 검색할 수 있다', async () => {
+  const token = await signupAndLogin('partner');
+
+  await createPromotion(token, {
+    start_date: '2098-06-01',
+    end_date: '2098-06-10',
+    condition: '검색용특이조건XYZ',
+    items: [{ name: '평범한품목' }],
+  });
+  await createPromotion(token, {
+    start_date: '2098-07-01',
+    end_date: '2098-07-10',
+    condition: '평범한조건',
+    items: [{ name: '검색용특이품목XYZ' }],
+  });
+  await createPromotion(token, {
+    start_date: '2098-08-01',
+    end_date: '2098-08-10',
+    condition: '전혀관련없음',
+    items: [{ name: '무관품목' }],
+  });
+
+  const byCondition = await (await getPromotions(token, '?q=특이조건XYZ')).json();
+  assert.strictEqual(byCondition.total, 1);
+
+  const byItem = await (await getPromotions(token, '?q=특이품목XYZ')).json();
+  assert.strictEqual(byItem.total, 1);
+
+  const byCompany = await (await getPromotions(token, `?q=${encodeURIComponent('Test Company')}`)).json();
+  assert.strictEqual(byCompany.total, 3);
+
+  const noMatch = await (await getPromotions(token, '?q=존재하지않는검색어QQQ')).json();
+  assert.strictEqual(noMatch.total, 0);
+});
+
 test('CJ프레시웨이 계정으로 등록 시도 시 403이 반환된다', async () => {
   const token = await signupAndLogin('cj_freshway');
 

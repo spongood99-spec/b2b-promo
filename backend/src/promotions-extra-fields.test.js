@@ -162,6 +162,16 @@ test('실무필드 문자열 길이 제한(contact_name 등)을 초과하면 400
   assert.strictEqual(res.status, 400);
 });
 
+test('첨부링크가 http(s)로 시작하지 않으면 400을 반환한다', async () => {
+  const partner = await signupAndLogin('partner');
+
+  const badUrl = await createPromotion(partner.token, { attachment_url: 'javascript:alert(1)' });
+  assert.strictEqual(badUrl.status, 400);
+
+  const okUrl = await createPromotion(partner.token, { attachment_url: 'https://example.com/spec.pdf' });
+  assert.strictEqual(okUrl.status, 201);
+});
+
 test('CJ프레시웨이가 "수정 후 승인" 시 선택 필드를 함께 수정할 수 있다', async () => {
   const partner = await signupAndLogin('partner');
   const cj = await signupAndLogin('cj_freshway');

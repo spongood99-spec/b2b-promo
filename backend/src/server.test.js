@@ -30,3 +30,9 @@ test('GET /no-such-path-xyz returns 404 with common error format', async () => {
   assert.strictEqual(body.error.code, 'NOT_FOUND');
   assert.strictEqual(typeof body.error.message, 'string');
 });
+
+test('helmet 보안 헤더(X-Content-Type-Options, X-Frame-Options)가 응답에 포함된다', async () => {
+  const res = await fetch(`${baseUrl}/health`);
+  assert.strictEqual(res.headers.get('x-content-type-options'), 'nosniff');
+  assert.ok(res.headers.get('x-frame-options'));
+});

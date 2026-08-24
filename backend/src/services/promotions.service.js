@@ -103,6 +103,9 @@ function validateExtraFields(payload) {
       throw validationError(`${field} 값이 너무 길습니다(최대 ${maxLength}자)`);
     }
   }
+  if (payload.attachment_url != null && payload.attachment_url !== '' && !/^https?:\/\//i.test(payload.attachment_url)) {
+    throw validationError('첨부링크는 http:// 또는 https://로 시작해야 합니다');
+  }
 }
 
 function validateDateOrder(startDate, endDate) {
@@ -259,7 +262,7 @@ async function createPromotion({ proposerId, start_date, end_date, condition, it
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 
-async function listPromotions({ userId, role, status, from, to, page, limit }) {
+async function listPromotions({ userId, role, status, from, to, page, limit, q }) {
   const conditions = [];
   const params = [];
 
@@ -270,6 +273,16 @@ async function listPromotions({ userId, role, status, from, to, page, limit }) {
   if (status) {
     params.push(status);
     conditions.push(`p.status = $${params.length}`);
+  }
+  if (q) {
+    params.push(`%${q}%`);
+    const qIndex = params.length;
+    conditions.push(
+      `(p.condition ILIKE $${qIndex} OR u.company_name ILIKE $${qIndex} OR EXISTS (
+        SELECT 1 FROM promotion_items pi2 JOIN items i2 ON i2.id = pi2.item_id
+        WHERE pi2.promotion_id = p.id AND i2.name ILIKE $${qIndex}
+      ))`
+    );
   }
   if (from && to) {
     params.push(from, to);
@@ -302,7 +315,7 @@ async function listPromotions({ userId, role, status, from, to, page, limit }) {
   const offset = (pageNum - 1) * limitNum;
 
   const countResult = await pool.query(
-    `SELECT COUNT(*)::int AS total FROM promotions p${where}`,
+    `SELECT COUNT(*)::int AS total FROM promotions p JOIN users u ON u.id = p.proposer_id${where}`,
     params
   );
   const total = countResult.rows[0].total;
