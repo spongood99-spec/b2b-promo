@@ -78,26 +78,33 @@ export function PromotionForm() {
 
         <div className="form-field-row">
           <div className="form-field">
-            <label>시작일</label>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            <label htmlFor="promotion-start-date">시작일</label>
+            <input
+              id="promotion-start-date"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
           </div>
           <div className="form-field">
-            <label>종료일</label>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <label htmlFor="promotion-end-date">종료일</label>
+            <input id="promotion-end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           </div>
         </div>
 
         <div className="form-field">
-          <label>대상 품목</label>
+          <label id="promotion-items-label">대상 품목</label>
           <div className="item-add-row">
             <input
               type="text"
+              aria-labelledby="promotion-items-label"
               placeholder="품목명"
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
             />
             <input
               type="text"
+              aria-label="규격(선택)"
               placeholder="규격(선택)"
               value={itemSpec}
               onChange={(e) => setItemSpec(e.target.value)}
@@ -122,8 +129,8 @@ export function PromotionForm() {
         </div>
 
         <div className="form-field">
-          <label>조건</label>
-          <textarea value={condition} onChange={(e) => setCondition(e.target.value)} />
+          <label htmlFor="promotion-condition">조건</label>
+          <textarea id="promotion-condition" value={condition} onChange={(e) => setCondition(e.target.value)} />
         </div>
 
         <PromotionExtraFields values={extraFields} onChange={setExtraFields} />

@@ -144,3 +144,23 @@ test('허용되지 않은 상태 전이 요청 시 409가 반환된다', async (
   const body = await res.json();
   assert.ok(body.error);
 });
+
+test('동시에 승인/반려 요청이 들어오면 한 쪽만 성공하고 나머지는 409가 반환된다(레이스 컨디션 가드)', async () => {
+  const partner = await signupAndLogin('partner');
+  const cj = await signupAndLogin('cj_freshway');
+  const promotion = await createPromotion(partner.token, { start_date: '2098-06-01', end_date: '2098-06-05' });
+
+  const [approveRes, rejectRes] = await Promise.all([
+    patch(cj.token, `/promotions/${promotion.id}/approve`),
+    patch(cj.token, `/promotions/${promotion.id}/reject`, { reject_reason: '사유' }),
+  ]);
+
+  const statuses = [approveRes.status, rejectRes.status].sort();
+  assert.deepStrictEqual(statuses, [200, 409]);
+
+  const finalRes = await fetch(`${baseUrl}/promotions/${promotion.id}`, {
+    headers: { Authorization: `Bearer ${cj.token}` },
+  });
+  const final = await finalRes.json();
+  assert.ok(['approved', 'rejected'].includes(final.status), '승인/반려 중 정확히 하나만 반영되어야 한다');
+});

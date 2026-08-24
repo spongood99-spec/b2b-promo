@@ -193,6 +193,18 @@ flowchart LR
   - [x] 허용되지 않은 `discount_type`/`promotion_type`, 범위를 벗어난 `partner_cost_share_pct`는 400이 반환된다
   - [x] "수정 후 승인", "재제출" 두 경로에서도 13개 필드를 함께 수정할 수 있다
 
+### BE-13. (Critical/High) 출하검사 하드닝 (2026-08-21 추가)
+- **선행 Task**: BE-4~BE-12
+- **작업 내용**: 병렬 코드 검증(백엔드/보안/테스트 4개 관점)에서 나온 Critical·High 항목을 조치.
+  - 상태 전이 UPDATE(승인/반려/취소/재오픈/재제출/수정후승인) 전부에 `WHERE ... AND status = ANY(허용상태)` 가드 추가, 0행이면 409(레이스 컨디션 방지)
+  - `createChangeRequest`에 소유권(proposer_id) 검증 추가(IDOR 방지)
+  - 알림 발송(`notifyUser`/`notifyAllCjFreshway`) 실패가 이미 커밋된 본 작업까지 500으로 만들지 않도록 `.catch`로 격리
+  - `/auth/login`, `/auth/signup`에 rate limit 추가(15분당 20회, 인스턴스 메모리 기반)
+- **완료 조건**
+  - [x] 동시에 승인/반려 요청을 보내면 하나만 200, 나머지는 409가 반환된다
+  - [x] 다른 협력사의 프로모션에 변경요청 등록 시도 시 403이 반환된다
+  - [x] 알림 발송 실패가 본 API 응답의 성공 여부에 영향을 주지 않는다(코드 리뷰로 확인, 실패 주입 테스트는 없음)
+
 ---
 
 ## 3. 프론트엔드
@@ -301,6 +313,15 @@ flowchart LR
   - [x] 13개 필드 모두 비운 채 제출해도 필수값 검증을 통과하고 정상 등록된다
   - [x] 할인유형/프로모션유형은 드롭다운(허용값만 선택 가능)으로 제공된다
   - [x] 상세 화면에 입력된 값이 표시되고, "수정 후 승인"/"재제출" 편집 모드에서 값을 바꿀 수 있다
+
+### FE-13. (High) 출하검사 하드닝 (2026-08-21 추가)
+- **선행 Task**: FE-9~FE-12
+- **작업 내용**: 병렬 코드 검증(프론트엔드 관점)에서 나온 High 항목을 조치.
+  - `authStore`의 `setAuth`/`clearAuth`에서 TanStack Query 캐시를 사용자 전환 시 비워, 로그아웃 없이 다른 계정으로 재로그인할 때 이전 계정 데이터가 잠깐 노출되던 문제 근본 해결(개별 훅마다 쿼리 키에 사용자 식별자를 넣는 대신 인증 상태 전환 지점 하나에서 처리)
+  - `PromotionForm.jsx`, `PromotionDetailPage.jsx` 편집모드, `PromotionExtraFields.jsx`(13개 필드), `ChangeRequestSection.jsx`, 반려/취소 사유 모달의 label-input 연결(`htmlFor`/`id`/`aria-labelledby`) 전체 보완
+- **완료 조건**
+  - [x] 협력사 A로 로그인해 목록을 조회한 뒤 로그아웃 없이 협력사 B로 재로그인하면 A의 데이터가 전혀 보이지 않는다
+  - [x] 위 화면들의 모든 입력 필드가 `label` 클릭/screen reader로 정상 연결된다
 
 ---
 

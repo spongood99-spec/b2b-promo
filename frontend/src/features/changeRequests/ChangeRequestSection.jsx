@@ -73,8 +73,13 @@ export function ChangeRequestSection({ promotionId }) {
         <form className="auth-form cr-form" onSubmit={handleSubmit}>
           {error && <div className="form-error">{error}</div>}
           <div className="form-field">
-            <label>변경 내용 입력</label>
-            <input type="text" value={content} onChange={(e) => setContent(e.target.value)} />
+            <label htmlFor="change-request-content">변경 내용 입력</label>
+            <input
+              id="change-request-content"
+              type="text"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+            />
           </div>
           <button type="submit" className="btn-primary" disabled={createMutation.isPending}>
             등록

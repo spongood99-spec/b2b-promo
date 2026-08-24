@@ -127,3 +127,12 @@ test('필수값(content) 없이 변경요청 등록 시 400이 반환된다', as
   const res = await post(partner.token, `/promotions/${promotion.id}/change-requests`, {});
   assert.strictEqual(res.status, 400);
 });
+
+test('다른 협력사의 프로모션에 변경요청을 등록하려 하면 403이 반환된다(IDOR 방지)', async () => {
+  const partnerA = await signupAndLogin('partner');
+  const partnerB = await signupAndLogin('partner');
+  const promotion = await createPromotion(partnerA.token, { start_date: '2097-05-01', end_date: '2097-05-05' });
+
+  const res = await post(partnerB.token, `/promotions/${promotion.id}/change-requests`, { content: '허용되지 않는 요청' });
+  assert.strictEqual(res.status, 403);
+});

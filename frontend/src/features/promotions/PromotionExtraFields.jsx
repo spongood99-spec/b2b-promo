@@ -70,8 +70,12 @@ export function PromotionExtraFields({ values, onChange }) {
       <summary>상세 조건 (선택)</summary>
       <div className="extra-fields-grid">
         <div className="form-field">
-          <label>할인유형</label>
-          <select value={values.discount_type} onChange={(e) => set('discount_type', e.target.value)}>
+          <label htmlFor="extra-discount-type">할인유형</label>
+          <select
+            id="extra-discount-type"
+            value={values.discount_type}
+            onChange={(e) => set('discount_type', e.target.value)}
+          >
             <option value="">선택 안 함</option>
             {DISCOUNT_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -81,12 +85,18 @@ export function PromotionExtraFields({ values, onChange }) {
           </select>
         </div>
         <div className="form-field">
-          <label>할인값</label>
-          <input type="number" value={values.discount_value} onChange={(e) => set('discount_value', e.target.value)} />
+          <label htmlFor="extra-discount-value">할인값</label>
+          <input
+            id="extra-discount-value"
+            type="number"
+            value={values.discount_value}
+            onChange={(e) => set('discount_value', e.target.value)}
+          />
         </div>
         <div className="form-field">
-          <label>협력사 부담율(%)</label>
+          <label htmlFor="extra-partner-cost-share-pct">협력사 부담율(%)</label>
           <input
+            id="extra-partner-cost-share-pct"
             type="number"
             min="0"
             max="100"
@@ -95,40 +105,70 @@ export function PromotionExtraFields({ values, onChange }) {
           />
         </div>
         <div className="form-field">
-          <label>최소주문수량</label>
-          <input type="number" value={values.moq} onChange={(e) => set('moq', e.target.value)} />
+          <label htmlFor="extra-moq">최소주문수량</label>
+          <input id="extra-moq" type="number" value={values.moq} onChange={(e) => set('moq', e.target.value)} />
         </div>
         <div className="form-field">
-          <label>공급가능수량</label>
-          <input type="number" value={values.available_qty} onChange={(e) => set('available_qty', e.target.value)} />
-        </div>
-        <div className="form-field">
-          <label>리드타임(일)</label>
-          <input type="number" value={values.lead_time_days} onChange={(e) => set('lead_time_days', e.target.value)} />
-        </div>
-        <div className="form-field">
-          <label>담당자명</label>
-          <input type="text" value={values.contact_name} onChange={(e) => set('contact_name', e.target.value)} />
-        </div>
-        <div className="form-field">
-          <label>담당자 연락처</label>
-          <input type="text" value={values.contact_phone} onChange={(e) => set('contact_phone', e.target.value)} />
-        </div>
-        <div className="form-field">
-          <label>원산지/인증정보</label>
-          <input type="text" value={values.origin_and_cert} onChange={(e) => set('origin_and_cert', e.target.value)} />
-        </div>
-        <div className="form-field">
-          <label>유통기한/보관조건</label>
+          <label htmlFor="extra-available-qty">공급가능수량</label>
           <input
+            id="extra-available-qty"
+            type="number"
+            value={values.available_qty}
+            onChange={(e) => set('available_qty', e.target.value)}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="extra-lead-time-days">리드타임(일)</label>
+          <input
+            id="extra-lead-time-days"
+            type="number"
+            value={values.lead_time_days}
+            onChange={(e) => set('lead_time_days', e.target.value)}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="extra-contact-name">담당자명</label>
+          <input
+            id="extra-contact-name"
+            type="text"
+            value={values.contact_name}
+            onChange={(e) => set('contact_name', e.target.value)}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="extra-contact-phone">담당자 연락처</label>
+          <input
+            id="extra-contact-phone"
+            type="text"
+            value={values.contact_phone}
+            onChange={(e) => set('contact_phone', e.target.value)}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="extra-origin-and-cert">원산지/인증정보</label>
+          <input
+            id="extra-origin-and-cert"
+            type="text"
+            value={values.origin_and_cert}
+            onChange={(e) => set('origin_and_cert', e.target.value)}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="extra-shelf-life-and-storage">유통기한/보관조건</label>
+          <input
+            id="extra-shelf-life-and-storage"
             type="text"
             value={values.shelf_life_and_storage}
             onChange={(e) => set('shelf_life_and_storage', e.target.value)}
           />
         </div>
         <div className="form-field">
-          <label>프로모션유형</label>
-          <select value={values.promotion_type} onChange={(e) => set('promotion_type', e.target.value)}>
+          <label htmlFor="extra-promotion-type">프로모션유형</label>
+          <select
+            id="extra-promotion-type"
+            value={values.promotion_type}
+            onChange={(e) => set('promotion_type', e.target.value)}
+          >
             <option value="">선택 안 함</option>
             {PROMOTION_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -138,8 +178,9 @@ export function PromotionExtraFields({ values, onChange }) {
           </select>
         </div>
         <div className="form-field">
-          <label>적용채널</label>
+          <label htmlFor="extra-target-channel">적용채널</label>
           <input
+            id="extra-target-channel"
             type="text"
             placeholder="미입력 시 전체"
             value={values.target_channel}
@@ -147,8 +188,13 @@ export function PromotionExtraFields({ values, onChange }) {
           />
         </div>
         <div className="form-field">
-          <label>첨부링크</label>
-          <input type="url" value={values.attachment_url} onChange={(e) => set('attachment_url', e.target.value)} />
+          <label htmlFor="extra-attachment-url">첨부링크</label>
+          <input
+            id="extra-attachment-url"
+            type="url"
+            value={values.attachment_url}
+            onChange={(e) => set('attachment_url', e.target.value)}
+          />
         </div>
       </div>
     </details>

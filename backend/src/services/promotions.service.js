@@ -183,11 +183,13 @@ async function createPromotion({ proposerId, start_date, end_date, condition, it
     endDate: promotion.end_date,
   });
 
-  await notificationsService.notifyAllCjFreshway({
-    promotionId: promotion.id,
-    type: 'new_promotion',
-    message: `${companyName}에서 새 프로모션을 등록했습니다.`,
-  });
+  await notificationsService
+    .notifyAllCjFreshway({
+      promotionId: promotion.id,
+      type: 'new_promotion',
+      message: `${companyName}에서 새 프로모션을 등록했습니다.`,
+    })
+    .catch((err) => console.error('notification failed', err));
 
   return { ...promotion, items: createdItems, overlap_warning: overlapWarning };
 }
@@ -298,6 +300,12 @@ async function withOverlapWarning(promotion) {
   return { ...filled, overlap_warning: overlapWarning };
 }
 
+// 동시성 가드: 상태 확인과 UPDATE 사이에 다른 요청이 먼저 상태를 바꿔버리는 TOCTOU 레이스를 막기 위해
+// UPDATE 자체의 WHERE에도 허용 상태 목록을 걸고, 0행이면(그 사이 상태가 바뀐 것) 409로 처리한다.
+function concurrentTransitionError() {
+  return invalidTransition('다른 요청에 의해 프로모션 상태가 이미 변경되었습니다');
+}
+
 async function approvePromotion({ id, reviewerId }) {
   const promotion = await findPromotionOrThrow(id);
   if (!canApprove(promotion.status)) {
@@ -305,15 +313,18 @@ async function approvePromotion({ id, reviewerId }) {
   }
 
   const result = await pool.query(
-    "UPDATE promotions SET status='approved', reviewer_id=$1 WHERE id=$2 RETURNING *",
-    [reviewerId, id]
+    "UPDATE promotions SET status='approved', reviewer_id=$1 WHERE id=$2 AND status = ANY($3) RETURNING *",
+    [reviewerId, id, APPROVABLE_FROM]
   );
-  await notificationsService.notifyUser({
-    userId: promotion.proposer_id,
-    promotionId: id,
-    type: 'approved',
-    message: '프로모션이 승인되었습니다.',
-  });
+  if (result.rowCount === 0) throw concurrentTransitionError();
+  await notificationsService
+    .notifyUser({
+      userId: promotion.proposer_id,
+      promotionId: id,
+      type: 'approved',
+      message: '프로모션이 승인되었습니다.',
+    })
+    .catch((err) => console.error('notification failed', err));
   return withOverlapWarning(result.rows[0]);
 }
 
@@ -328,15 +339,18 @@ async function rejectPromotion({ id, reviewerId, reject_reason }) {
   }
 
   const result = await pool.query(
-    "UPDATE promotions SET status='rejected', reviewer_id=$1, reject_reason=$2 WHERE id=$3 RETURNING *",
-    [reviewerId, reject_reason, id]
+    "UPDATE promotions SET status='rejected', reviewer_id=$1, reject_reason=$2 WHERE id=$3 AND status = ANY($4) RETURNING *",
+    [reviewerId, reject_reason, id, REJECTABLE_FROM]
   );
-  await notificationsService.notifyUser({
-    userId: promotion.proposer_id,
-    promotionId: id,
-    type: 'rejected',
-    message: `프로모션이 반려되었습니다. (사유: ${reject_reason})`,
-  });
+  if (result.rowCount === 0) throw concurrentTransitionError();
+  await notificationsService
+    .notifyUser({
+      userId: promotion.proposer_id,
+      promotionId: id,
+      type: 'rejected',
+      message: `프로모션이 반려되었습니다. (사유: ${reject_reason})`,
+    })
+    .catch((err) => console.error('notification failed', err));
   return fillItems(result.rows[0]);
 }
 
@@ -351,9 +365,10 @@ async function cancelPromotion({ id, reviewerId, cancel_reason }) {
   }
 
   const result = await pool.query(
-    "UPDATE promotions SET status='cancelled', reviewer_id=$1, cancel_reason=$2 WHERE id=$3 RETURNING *",
-    [reviewerId, cancel_reason, id]
+    "UPDATE promotions SET status='cancelled', reviewer_id=$1, cancel_reason=$2 WHERE id=$3 AND status = ANY($4) RETURNING *",
+    [reviewerId, cancel_reason, id, CANCELLABLE_FROM]
   );
+  if (result.rowCount === 0) throw concurrentTransitionError();
   return fillItems(result.rows[0]);
 }
 
@@ -384,17 +399,24 @@ async function updateAndApprovePromotion({ id, reviewerId, start_date, end_date,
   setClauses.push("status='approved'");
   params.push(id);
 
+  const statusGuardIndex = params.length + 1;
+  params.push(APPROVABLE_FROM);
+  const whereClause = `WHERE id=$${params.length - 1} AND status = ANY($${statusGuardIndex})`;
+
   if (!Array.isArray(items)) {
     const result = await pool.query(
-      `UPDATE promotions SET ${setClauses.join(', ')} WHERE id=$${params.length} RETURNING *`,
+      `UPDATE promotions SET ${setClauses.join(', ')} ${whereClause} RETURNING *`,
       params
     );
-    await notificationsService.notifyUser({
-      userId: promotion.proposer_id,
-      promotionId: id,
-      type: 'approved',
-      message: '수정된 내용으로 프로모션이 승인되었습니다.',
-    });
+    if (result.rowCount === 0) throw concurrentTransitionError();
+    await notificationsService
+      .notifyUser({
+        userId: promotion.proposer_id,
+        promotionId: id,
+        type: 'approved',
+        message: '수정된 내용으로 프로모션이 승인되었습니다.',
+      })
+      .catch((err) => console.error('notification failed', err));
     return withOverlapWarning(result.rows[0]);
   }
 
@@ -405,9 +427,10 @@ async function updateAndApprovePromotion({ id, reviewerId, start_date, end_date,
     await client.query('BEGIN');
 
     const updateResult = await client.query(
-      `UPDATE promotions SET ${setClauses.join(', ')} WHERE id=$${params.length} RETURNING *`,
+      `UPDATE promotions SET ${setClauses.join(', ')} ${whereClause} RETURNING *`,
       params
     );
+    if (updateResult.rowCount === 0) throw concurrentTransitionError();
     updatedPromotion = updateResult.rows[0];
 
     await client.query('DELETE FROM promotion_items WHERE promotion_id=$1', [id]);
@@ -443,12 +466,14 @@ async function updateAndApprovePromotion({ id, reviewerId, start_date, end_date,
     endDate: updatedPromotion.end_date,
   });
 
-  await notificationsService.notifyUser({
-    userId: updatedPromotion.proposer_id,
-    promotionId: id,
-    type: 'approved',
-    message: '수정된 내용으로 프로모션이 승인되었습니다.',
-  });
+  await notificationsService
+    .notifyUser({
+      userId: updatedPromotion.proposer_id,
+      promotionId: id,
+      type: 'approved',
+      message: '수정된 내용으로 프로모션이 승인되었습니다.',
+    })
+    .catch((err) => console.error('notification failed', err));
 
   return { ...updatedPromotion, items: createdItems, overlap_warning: overlapWarning };
 }
@@ -460,9 +485,10 @@ async function reopenPromotion({ id }) {
   }
 
   const result = await pool.query(
-    "UPDATE promotions SET status='in_review' WHERE id=$1 RETURNING *",
-    [id]
+    "UPDATE promotions SET status='in_review' WHERE id=$1 AND status = ANY($2) RETURNING *",
+    [id, REOPENABLE_FROM]
   );
+  if (result.rowCount === 0) throw concurrentTransitionError();
   return fillItems(result.rows[0]);
 }
 
@@ -484,6 +510,9 @@ async function resubmitPromotion({ id, proposerId, start_date, end_date, conditi
   const params = [start_date, end_date, condition];
   appendOptionalSetClauses(setClauses, params, extra, EXTRA_FIELDS);
   params.push(id);
+  const idIndex = params.length;
+  params.push(RESUBMITTABLE_FROM);
+  const statusGuardIndex = params.length;
 
   const client = await pool.connect();
   let updatedPromotion;
@@ -492,9 +521,10 @@ async function resubmitPromotion({ id, proposerId, start_date, end_date, conditi
     await client.query('BEGIN');
 
     const updateResult = await client.query(
-      `UPDATE promotions SET ${setClauses.join(', ')} WHERE id=$${params.length} RETURNING *`,
+      `UPDATE promotions SET ${setClauses.join(', ')} WHERE id=$${idIndex} AND status = ANY($${statusGuardIndex}) RETURNING *`,
       params
     );
+    if (updateResult.rowCount === 0) throw concurrentTransitionError();
     updatedPromotion = updateResult.rows[0];
 
     await client.query('DELETE FROM promotion_items WHERE promotion_id=$1', [id]);
@@ -530,11 +560,13 @@ async function resubmitPromotion({ id, proposerId, start_date, end_date, conditi
     endDate: updatedPromotion.end_date,
   });
 
-  await notificationsService.notifyAllCjFreshway({
-    promotionId: id,
-    type: 'resubmitted',
-    message: `${userResult.rows[0].company_name}에서 반려된 프로모션을 수정하여 재제출했습니다.`,
-  });
+  await notificationsService
+    .notifyAllCjFreshway({
+      promotionId: id,
+      type: 'resubmitted',
+      message: `${userResult.rows[0].company_name}에서 반려된 프로모션을 수정하여 재제출했습니다.`,
+    })
+    .catch((err) => console.error('notification failed', err));
 
   return { ...updatedPromotion, items: createdItems, overlap_warning: overlapWarning };
 }

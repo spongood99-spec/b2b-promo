@@ -28,8 +28,11 @@ function forbiddenError(message) {
 async function createChangeRequest({ promotionId, requesterId, content }) {
   if (!content) throw validationError('변경 요청 내용은 필수입니다');
 
-  const promoRes = await pool.query('SELECT status FROM promotions WHERE id = $1', [promotionId]);
+  const promoRes = await pool.query('SELECT status, proposer_id FROM promotions WHERE id = $1', [promotionId]);
   if (promoRes.rows.length === 0) throw notFoundError('프로모션을 찾을 수 없습니다');
+  if (promoRes.rows[0].proposer_id !== requesterId) {
+    throw forbiddenError('접근 권한이 없습니다');
+  }
 
   const isPostApproval = isPostApprovalStatus(promoRes.rows[0].status);
 
@@ -40,11 +43,13 @@ async function createChangeRequest({ promotionId, requesterId, content }) {
   );
 
   const requesterRes = await pool.query('SELECT company_name FROM users WHERE id = $1', [requesterId]);
-  await notificationsService.notifyAllCjFreshway({
-    promotionId,
-    type: 'new_change_request',
-    message: `${requesterRes.rows[0].company_name}에서 변경요청을 등록했습니다.`,
-  });
+  await notificationsService
+    .notifyAllCjFreshway({
+      promotionId,
+      type: 'new_change_request',
+      message: `${requesterRes.rows[0].company_name}에서 변경요청을 등록했습니다.`,
+    })
+    .catch((err) => console.error('notification failed', err));
 
   return res.rows[0];
 }
@@ -78,12 +83,14 @@ async function updateChangeRequestStatus({ id, apply_status }) {
   if (res.rows.length === 0) throw notFoundError('변경요청을 찾을 수 없습니다');
 
   const changeRequest = res.rows[0];
-  await notificationsService.notifyUser({
-    userId: changeRequest.requester_id,
-    promotionId: changeRequest.promotion_id,
-    type: apply_status === 'applied' ? 'change_request_applied' : 'change_request_rejected',
-    message: apply_status === 'applied' ? '변경요청이 반영완료되었습니다.' : '변경요청이 반영거부되었습니다.',
-  });
+  await notificationsService
+    .notifyUser({
+      userId: changeRequest.requester_id,
+      promotionId: changeRequest.promotion_id,
+      type: apply_status === 'applied' ? 'change_request_applied' : 'change_request_rejected',
+      message: apply_status === 'applied' ? '변경요청이 반영완료되었습니다.' : '변경요청이 반영거부되었습니다.',
+    })
+    .catch((err) => console.error('notification failed', err));
 
   return changeRequest;
 }
