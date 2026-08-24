@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useChangeRequests, useCreateChangeRequest, useUpdateChangeRequestStatus } from './useChangeRequests';
-
-function formatDateTime(iso) {
-  if (!iso) return '-';
-  const d = new Date(iso);
-  return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
+import { formatDateTime } from '../../utils/formatDateTime';
 
 const APPLY_STATUS_LABELS = { pending: '대기', applied: '반영완료', rejected: '반영거부' };
 const APPLY_STATUS_ORDER = ['pending', 'applied', 'rejected'];

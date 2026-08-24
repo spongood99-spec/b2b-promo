@@ -13,6 +13,7 @@ import {
 import { StatusBadge } from '../../components/StatusBadge';
 import { ChangeRequestSection } from '../changeRequests/ChangeRequestSection';
 import { useModalA11y } from '../../hooks/useModalA11y';
+import { formatDateTime } from '../../utils/formatDateTime';
 import {
   PromotionExtraFields,
   PromotionExtraFieldsView,
@@ -28,11 +29,6 @@ function formatDate(iso) {
   return iso ? iso.slice(2, 10).replace(/-/g, '.') : '';
 }
 
-function formatDateTime(iso) {
-  if (!iso) return '-';
-  const d = new Date(iso);
-  return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
 
 export function PromotionDetailPage() {
   const { id } = useParams();

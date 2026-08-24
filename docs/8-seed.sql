@@ -4,6 +4,7 @@
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- notifications는 명시하지 않아도 CASCADE로 함께 비워진다(promotions/users를 FK로 참조).
 TRUNCATE TABLE change_requests, promotion_items, promotions, items, users RESTART IDENTITY CASCADE;
 
 -- users: 협력사 2개(서로 다른 소속사), CJ프레시웨이 1개. 비밀번호는 모두 'password123'을 bcrypt로 해시.

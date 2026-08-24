@@ -1,6 +1,6 @@
 # 와이어프레임 - CJ프레시웨이 프로모션 협업 앱
 
-> 기준 문서: `1-domain-definition.md`(v1.4), `2-prd.md`(v1.0), `4-user-scenario.md`, `5-project-principle.md` 6장, `6-arch-diagram.md` 3장
+> 기준 문서: `1-domain-definition.md`(v1.8), `2-prd.md`(v1.1), `4-user-scenario.md`, `5-project-principle.md` 6장, `6-arch-diagram.md` 3장
 > 전제: 3일/1인 개발 MVP, React 19 반응형 웹(데스크톱 우선). P0 기능(FR-1~FR-5, FR-7) 기준 화면만 포함. 복잡한 차트/과도한 필터는 넣지 않는다. (2026-08-24: "대시보드/검색은 넣지 않는다"는 초안 방침이었으나, 사용자 관점 점검 후 FR-14 단순 검색과 FR-16 간단 통계 바를 예외적으로 추가했다 — 3장/6장 참고. 여전히 차트나 복잡한 필터 조합은 범위 밖이다.)
 
 ## 0. 반응형 브레이크포인트 전략

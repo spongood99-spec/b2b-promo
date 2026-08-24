@@ -4,7 +4,8 @@
 
 .promotion-stats-bar {
   display: flex;
-  gap: var(--space-4);
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
   margin-bottom: var(--space-4);
 }
 
@@ -25,13 +26,16 @@
 
 .promotion-list-toolbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: var(--space-2);
   margin-bottom: var(--space-4);
 }
 
 .promotion-list-filters {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
 }
 
@@ -48,6 +52,7 @@
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-sm);
   min-width: 220px;
+  flex: 1;
 }
 
 .btn-register {
@@ -135,6 +140,14 @@
 }
 
 @media (max-width: 767px) {
+  .promotion-list-filters,
+  .promotion-list-toolbar {
+    width: 100%;
+  }
+  .promotion-search-input {
+    min-width: 0;
+    width: 100%;
+  }
   .promotion-table thead {
     display: none;
   }

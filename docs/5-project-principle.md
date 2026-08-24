@@ -1,6 +1,6 @@
 # 프로젝트 구조 설계 원칙 - CJ프레시웨이 프로모션 협업 앱
 
-> 기준 문서: `1-domain-definition.md`(v1.4), `2-prd.md`(v1.0), `2-usecase.md`, `4-user-scenario.md`
+> 기준 문서: `1-domain-definition.md`(v1.8), `2-prd.md`(v1.1), `2-usecase.md`, `4-user-scenario.md`
 > 전제: 3일 / 1인 개발 MVP. 이 문서의 모든 규칙은 "지금 당장 필요한 것만" 기준으로 작성했다.
 
 ## 1. 최상위 원칙 (모든 스택 공통)
@@ -128,25 +128,29 @@ backend/
       pool.js              # pg Pool 생성 (DATABASE_URL 사용)
       migrations/           # SQL 마이그레이션 파일 (001_init.sql 등)
     middlewares/
-      auth.js               # JWT 검증, req.user 주입
+      auth.js               # JWT 검증, req.user 주입, access/refresh type 클레임 확인
       requireRole.js        # 역할 기반 접근 제어 (협력사/CJ프레시웨이)
       errorHandler.js        # 공통 에러 응답 포맷
     routes/
       auth.routes.js
-      promotions.routes.js
+      promotions.routes.js      # /stats(대시보드, 2026-08-24)를 /:id보다 먼저 등록
       changeRequests.routes.js
+      notifications.routes.js  # FR-13, 2026-08-21 추가
     controllers/
       auth.controller.js
       promotions.controller.js
       changeRequests.controller.js
+      notifications.controller.js
     services/
       auth.service.js         # 회원가입/로그인/토큰 발급/재발급
-      promotions.service.js   # 등록/조회/승인/반려/취소/재오픈/상태전이 규칙
+      promotions.service.js   # 등록/조회/승인/반려/취소/재오픈/상태전이 규칙, 대시보드 집계
       changeRequests.service.js
-    app.js                  # express 앱 설정 (미들웨어 연결)
+      notifications.service.js
+    app.js                  # express 앱 설정 (helmet/cors/express.json 등 미들웨어 연결)
     server.js               # 서버 기동 (listen)
   .env.example
 ```
-- 엔티티 4개(User/Promotion/Item/ChangeRequest)에 라우트/컨트롤러/서비스 파일이 각각 대응한다. Item은 별도 CRUD 화면이 없으므로(PRD FR-2 참고) 독립 라우트를 만들지 않고 `promotions.service.js` 안에서 함께 처리한다.
+- 엔티티 5개(User/Promotion/Item/ChangeRequest/Notification)에 라우트/컨트롤러/서비스 파일이 각각 대응한다. Item은 별도 CRUD 화면이 없으므로(PRD FR-2 참고) 독립 라우트를 만들지 않고 `promotions.service.js` 안에서 함께 처리한다.
 - 상태 전이 로직(제안됨→검토중→승인됨/반려됨, 취소, 재오픈, EC-03/EC-05 판단)은 모두 `promotions.service.js`에 순수 함수로 모아 두고, 여기에만 단위 테스트를 작성한다(4장 참고).
 - repository/DAO/DTO 계층을 별도로 만들지 않는다. 서비스에서 `pool.query(...)`를 직접 호출한다.
+- 인증 미들웨어를 어디에 거는지는 라우터마다 다르다 — `promotions.routes.js`는 `router.use(auth)`로 내부에서, `changeRequests.routes.js`/`notifications.routes.js`는 `app.js`에서 `app.use(path, auth, router)`로 외부에서 건다. 새 라우터를 추가할 때 두 방식 중 하나로 인증이 실제로 걸려 있는지 반드시 확인한다.

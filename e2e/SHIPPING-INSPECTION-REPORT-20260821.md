@@ -13,8 +13,8 @@
 | High | `/auth/login`, `/auth/signup`에 rate limiting 없음 | ✅ 수정 |
 | High | TanStack Query 캐시가 사용자별로 분리 안 됨(계정 전환 시 데이터 유출) | ✅ 수정 |
 | High | 등록폼/상세편집/13개 실무필드/변경요청 입력의 label-input 연결 누락 | ✅ 수정 |
-| Medium | 회원가입 비밀번호 강도 검증 없음, 에러 핸들러 원본 메시지 노출, 필수 env var 미검증, refresh token 무효화/회전 없음, `POST /auth/logout` 부재, NotificationBell 로딩/에러/키보드 접근성, 모달 포커스 관리, 실무속성 숫자필드 범위검증 | ⏸ 보류(사용자가 이번 라운드는 Critical+High만 요청) |
-| Low | EC-05 승인시점 테스트 공백, JWT algorithms 미고정, 알림 드롭다운 바깥클릭, 프론트 테스트 0건, 동시성 테스트 부재, 오늘 신규 기능 교차 통합테스트 부재 | ⏸ 보류 |
+| Medium | 회원가입 비밀번호 강도 검증 없음, 에러 핸들러 원본 메시지 노출, 필수 env var 미검증, refresh token 무효화/회전 없음, `POST /auth/logout` 부재, NotificationBell 로딩/에러/키보드 접근성, 모달 포커스 관리, 실무속성 숫자필드 범위검증 | ✅ 수정 완료 — 처리 당시엔 보류였으나 같은 날 §7에서 전부 조치했다(아래 참고) |
+| Low | EC-05 승인시점 테스트 공백, JWT algorithms 미고정, 알림 드롭다운 바깥클릭, 프론트 테스트 0건, 동시성 테스트 부재, 오늘 신규 기능 교차 통합테스트 부재 | ✅ 수정 완료 — 처리 당시엔 보류였으나 같은 날 §8에서 전부 조치했다(아래 참고) |
 
 ## 2. Critical/High 수정 내역
 

@@ -2,7 +2,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert');
 const crypto = require('node:crypto');
 
-const { canReopen, periodsOverlap } = require('./services/promotions.service');
+const { canReopen } = require('./services/promotions.service');
 
 let server;
 let baseUrl;
@@ -79,17 +79,6 @@ test('canReopen: closed/cancelled만 true, 나머지는 false', () => {
   assert.strictEqual(canReopen('approved'), false);
   assert.strictEqual(canReopen('rejected'), false);
   assert.strictEqual(canReopen('active'), false);
-});
-
-test('periodsOverlap: 부분 겹침/완전 포함/하루만 겹침은 true, 안 겹치면 false', () => {
-  // 부분 겹침
-  assert.strictEqual(periodsOverlap('2096-01-01', '2096-01-10', '2096-01-05', '2096-01-15'), true);
-  // 완전 포함
-  assert.strictEqual(periodsOverlap('2096-01-01', '2096-01-20', '2096-01-05', '2096-01-10'), true);
-  // 정확히 하루만 겹침
-  assert.strictEqual(periodsOverlap('2096-01-01', '2096-01-10', '2096-01-10', '2096-01-20'), true);
-  // 안 겹침
-  assert.strictEqual(periodsOverlap('2096-01-01', '2096-01-10', '2096-01-11', '2096-01-20'), false);
 });
 
 test('재오픈 - cancelled 상태에서 성공 시 200, status는 in_review', async () => {

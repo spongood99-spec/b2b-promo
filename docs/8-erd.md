@@ -1,6 +1,6 @@
 # ERD - CJ프레시웨이 프로모션 협업 앱
 
-> 기준 문서: `1-domain-definition.md`(v1.4), `2-prd.md`(v1.0), `5-project-principle.md`
+> 기준 문서: `1-domain-definition.md`(v1.8), `2-prd.md`(v1.1), `5-project-principle.md`
 
 ```mermaid
 erDiagram

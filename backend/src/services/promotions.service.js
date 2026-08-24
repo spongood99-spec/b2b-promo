@@ -148,10 +148,6 @@ function canCancel(status) { return CANCELLABLE_FROM.includes(status); }
 function canReopen(status) { return REOPENABLE_FROM.includes(status); }
 function canResubmit(status) { return RESUBMITTABLE_FROM.includes(status); }
 
-function periodsOverlap(startA, endA, startB, endB) {
-  return startA <= endB && endA >= startB;
-}
-
 async function findPromotionOrThrow(id) {
   const result = await pool.query('SELECT * FROM promotions WHERE id = $1', [id]);
   const promotion = result.rows[0];
@@ -685,6 +681,5 @@ module.exports = {
   canCancel,
   canReopen,
   canResubmit,
-  periodsOverlap,
   checkOverlapWarning,
 };
