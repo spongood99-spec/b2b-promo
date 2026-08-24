@@ -88,4 +88,4 @@ flowchart TD
 ```
 
 > 참고: `PromotionForm`은 `PromotionDetailPage`의 자식 컴포넌트가 아니라 `/promotions/new`로 라우팅되는 별도 화면이다. `PromotionDetailPage`의 "수정 후 승인" 인라인 편집 모드는 `PromotionForm`을 재사용하지 않고 자체적으로 구현되어 있다(품목 추가/삭제 UI가 두 파일에 각각 존재).
-> `PromotionExtraFields`는 등록(`PromotionForm`)과 상세 편집(`PromotionDetailPage`의 "수정 후 승인"/"재제출") 양쪽에서 공유하는 컴포넌트다.
+> `PromotionExtraFields`는 등록(`PromotionForm`)과 상세 편집(`PromotionDetailPage`의 "수정 후 승인"/"재제출") 양쪽에서 공유하는 컴포넌트다. JSX 없는 필드 변환 로직(`extraFieldsToPayload`/`extraFieldsFromPromotion` 등)은 `promotionExtraFieldsUtils.js`로 분리되어 있다(2026-08-21, Node 네이티브 테스트 러너로 번들러 없이 테스트하기 위한 목적).

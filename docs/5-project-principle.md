@@ -60,16 +60,16 @@ UI (컴포넌트/페이지)
 
 ## 4. 테스트 / 품질 원칙
 
-- 3일 MVP 규모에서 e2e/통합 테스트 자동화는 **범위 밖**이다. 수동으로 시나리오(4-user-scenario.md 1~6)를 훑어보는 것으로 대체한다. (2026-08-21에 Playwright MCP로 실제 브라우저를 구동해 이 수동 훑기를 1회 수행하고 `e2e/E2E-REPORT.md`에 기록했다 — CI에 편입되어 반복 실행되는 자동화 테스트 스위트가 아니라, 위 수동 확인을 도구로 보조한 1회성 점검이라는 점은 동일하다.)
-- 단위 테스트는 **상태 전이 로직에만** 작성한다. 대상: 프로모션 상태 전이 규칙(제안됨→검토중→승인됨/반려됨, 취소, 재오픈), EC-03(승인후변경 판단), EC-05(기간 중복 판단) 같이 분기가 있고 틀리면 데이터가 잘못되는 순수 함수 위주.
-- CRUD성 컨트롤러/라우트, 단순 조회 API에는 테스트를 만들지 않는다.
+- 브라우저 기반 e2e 자동화(CI에 편입되어 반복 실행되는 스위트)는 여전히 **범위 밖**이다. 실제 배포본 확인은 수동으로 시나리오(4-user-scenario.md 1~6)를 훑거나(2026-08-21 `e2e/E2E-REPORT.md` 등), Playwright MCP로 브라우저를 구동해 1회성으로 점검하는 방식을 쓴다.
+- 다만 API 레벨 통합테스트(`node:test`로 실제 서버를 띄워 여러 엔드포인트를 순서대로 호출하는 방식, 예: `scenarios-e2e.test.js`, `integration-cross-feature.test.js`)는 이미 폭넓게 쓰고 있고 계속 늘려간다 — 브라우저 없이 빠르게 돌 수 있어 위 "e2e 자동화 범위 밖" 원칙과 충돌하지 않는다.
+- 단위/통합 테스트는 다음에 집중한다: 상태 전이 로직(제안됨→검토중→승인됨/반려됨, 취소, 재오픈, 재제출), EC-03(승인후변경 판단)·EC-05(기간 중복 판단) 같이 분기가 있고 틀리면 데이터가 잘못되는 로직, 그리고 오늘처럼 여러 기능이 한 흐름에서 서로 간섭하는지(재제출+알림+실무속성 등). 단순 조회 API 자체를 위한 CRUD 테스트는 굳이 추가하지 않되, 다른 목적의 통합테스트 안에서 자연스럽게 함께 검증되는 것은 무방하다.
 - 커버리지 목표 수치를 정하지 않는다(80% 등 강제하지 않음). "핵심 로직에 대한 테스트가 있는가"만 확인한다.
-- 테스트 프레임워크는 별도 도입 없이, 이미 Node.js에 있는 `node:test` + `assert`로 충분하면 그것을 쓴다(추가 의존성 최소화).
+- 테스트 프레임워크는 백엔드/프론트엔드 모두 별도 도입 없이 Node.js 내장 `node:test` + `assert`로 충분하면 그것을 쓴다(추가 의존성 최소화). 프론트엔드는 JSX가 섞인 파일을 Node 네이티브 ESM 로더가 못 읽으므로, 테스트하려는 순수 로직은 JSX 없는 파일로 분리해 그 파일만 테스트한다(`promotionExtraFieldsUtils.js` 참고). 컴포넌트 렌더링·훅 테스트가 필요해지면 그때 vitest 등 번들러 인식 러너 도입을 별도로 결정한다. 테스트 파일은 `*.test.js`로 이름 짓고 테스트 대상 파일과 같은 디렉토리에 둔다(백엔드/프론트엔드 공통 컨벤션).
 
 ## 5. 설정 / 보안 / 운영 원칙
 
 - **환경변수**: `.env` 파일 하나로 관리(`DATABASE_URL`, `PORT`, `CORS_ORIGIN`, `NODE_ENV`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ACCESS_EXPIRES`, `JWT_REFRESH_EXPIRES` 등). 환경별 분리(dev/staging/prod)는 하지 않는다. `.env`는 `.gitignore`에 포함하고 `.env.example`만 커밋한다. 필수 환경변수(`DATABASE_URL`/`JWT_ACCESS_SECRET`/`JWT_REFRESH_SECRET`/`CORS_ORIGIN`) 중 하나라도 없으면 앱 부팅 시 즉시 종료한다(`app.js`, fail-fast, 2026-08-21) — 배포 실수를 첫 요청이 아니라 기동 시점에 드러내기 위함.
-- **JWT**: access token은 짧은 만료(기본 15분, `JWT_ACCESS_EXPIRES`로 조정 가능), refresh token은 김(기본 7일, `JWT_REFRESH_EXPIRES`로 조정 가능). access는 클라이언트 메모리(Zustand)에만, refresh는 HttpOnly Secure 쿠키. 서버는 서명/만료만 검증하며 블랙리스트·회전 이력은 관리하지 않는다(PRD 5장과 동일, MVP 범위 밖). `POST /auth/logout`(2026-08-21 추가)은 refresh_token 쿠키만 지우며, 이미 발급된 access token을 서버가 강제로 무효화하지는 않는다(짧은 만료로 대응).
+- **JWT**: access token은 짧은 만료(기본 15분, `JWT_ACCESS_EXPIRES`로 조정 가능), refresh token은 김(기본 7일, `JWT_REFRESH_EXPIRES`로 조정 가능). access는 클라이언트 메모리(Zustand)에만, refresh는 HttpOnly Secure 쿠키. 서버는 서명/만료만 검증하며 블랙리스트·회전 이력은 관리하지 않는다(PRD 5장과 동일, MVP 범위 밖). `sign`/`verify` 모두 알고리즘을 `HS256`으로 명시 고정한다(2026-08-21, 라이브러리 기본값에 암묵적으로 의존하지 않기 위함). `POST /auth/logout`(2026-08-21 추가)은 refresh_token 쿠키만 지우며, 이미 발급된 access token을 서버가 강제로 무효화하지는 않는다(짧은 만료로 대응).
 - **DB 접속정보**: `DATABASE_URL` 환경변수 하나로 pg Pool을 생성한다. 커넥션 풀 설정도 기본값 위주로, 별도 튜닝은 하지 않는다.
 - **로깅**: `console.log`/`console.error` 수준의 최소 로깅으로 충분하다. 요청 진입 시 method+path, 에러 발생 시 스택트레이스 정도만 남긴다. 구조화 로깅(JSON), 분산 트레이싱, 로그 수집 인프라는 도입하지 않는다.
 - **배포**: 최초 설계는 단일 서버(Node.js 프로세스 하나 + PostgreSQL 하나) 전제였으나, 실제 운영은 프론트/백엔드가 각각 별도 Vercel 프로젝트로 분리 배포되고 DB는 Supabase Postgres다(`6-arch-diagram.md` 참고). 이중화, 로드밸런서, 오토스케일링, 캐시 레이어(Redis 등)는 여전히 만들지 않는다.
@@ -101,13 +101,20 @@ frontend/
       calendar/
         CalendarPage.jsx
         useCalendarPromotions.js
-    components/          # 여러 feature에서 재사용하는 공통 UI (AppHeader, StatusBadge, ProtectedRoute 등)
+      notifications/       # 2026-08-21 추가
+        useNotifications.js
+    components/          # 여러 feature에서 재사용하는 공통 UI (AppHeader, StatusBadge, ProtectedRoute,
+                          # NotificationBell, ChangePasswordModal 등, 2026-08-21 추가분 포함)
+    hooks/               # 2026-08-21 추가. 특정 feature 하나가 아니라 여러 feature/공통 컴포넌트가
+                          # 함께 쓰는 순수 훅만 여기 둔다(예: useModalA11y — ChangePasswordModal과
+                          # PromotionDetailPage 양쪽에서 사용)
+      useModalA11y.js
     routes/              # 라우팅 설정 (React Router 등)
       AppRouter.jsx
     App.jsx
     main.jsx
 ```
-- `features` 아래는 도메인 정의서의 엔티티/유스케이스 단위로 나눈다(auth, promotions, changeRequests, calendar). 각 feature 폴더 안에 화면 컴포넌트 + TanStack Query 훅을 같이 둔다(별도 `hooks/`, `services/` 하위 폴더로 더 쪼개지 않는다).
+- `features` 아래는 도메인 정의서의 엔티티/유스케이스 단위로 나눈다(auth, promotions, changeRequests, calendar, notifications). 각 feature 폴더 안에 화면 컴포넌트 + TanStack Query 훅을 같이 두고, 그 feature 하나만을 위한 하위 `hooks/`, `services/` 폴더로 더 쪼개지 않는다. 다만 하나의 feature에 속하지 않고 여러 feature/공통 컴포넌트가 함께 쓰는 훅은 최상위 `hooks/`에 둔다(위 `useModalA11y` 참고) — "쪼개지 않는다"는 feature 내부 세분화를 금지하는 규칙이며, 진짜 공유 훅을 위한 최상위 폴더 자체를 막는 규칙은 아니다.
 - `stores/`는 authStore 하나면 충분하다. 프로모션/변경요청용 store를 따로 만들지 않는다(서버 상태이므로 TanStack Query가 담당).
 
 ## 7. 백엔드 디렉토리 구조
