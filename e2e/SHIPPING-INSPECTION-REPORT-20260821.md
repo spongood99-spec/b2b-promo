@@ -93,3 +93,13 @@
 | 로그아웃 클릭 시 `POST /auth/logout` 200 호출 확인 | ✅ (network 로그로 확인) |
 
 신규 버그 없음. 이번 검증은 실제 데이터 생성 없이(모두 사전 검증 단계에서 막힘) 끝나 별도 정리가 필요 없었다.
+
+## 8. Low 항목 후속 조치 (2026-08-21)
+
+6장에서 마지막으로 남겨둔 Low 항목 4건을 전부 처리했다(`9-plan.md` BE-15/FE-15 참고). 이제 6장의 Critical~Low 전체 목록이 처리 완료됐다.
+
+**백엔드**: `jwt.sign`/`jwt.verify`에 `HS256` 알고리즘 명시(라이브러리 기본값 의존 제거). EC-05(기간중복경고) 테스트를 승인 시점 경로까지 확장하고 "동일 회사 AND 동일 품목" 조건을 분리 검증(동일 회사·다른 품목, 다른 회사·동일 품목 각각 false인지)하는 테스트 추가. 재제출/알림/13개 실무속성이 한 흐름에서 서로 간섭 없이 동작하는지 확인하는 교차 통합테스트(`integration-cross-feature.test.js`) 추가 — 재제출 시 보낸 필드만 갱신, 등록→반려→재제출→승인 전체 흐름에서 알림 4종이 정확히 1건씩만 생성, 승인후변경(변경요청)과 실무속성이 서로 값을 침범하지 않음을 확인. `node --test` **91/91 통과**(신규 5건).
+
+**프론트엔드**: 처음으로 자동화 테스트 도입. 새 의존성 없이 Node 내장 `node --test`로 돌리기 위해 `PromotionExtraFields.jsx`의 JSX 없는 순수 로직을 `promotionExtraFieldsUtils.js`로 분리하고 그 파일만 테스트(`extraFieldsToPayload`/`extraFieldsFromPromotion`의 null 변환, 숫자 캐스팅, undefined 방어). `authStore`처럼 extension-less relative import를 쓰는 파일은 Node 네이티브 ESM 로더가 해석하지 못해 이번 범위에서는 제외했다(번들러 인식 테스트 러너 도입은 별도 결정 필요). `npm test`(frontend) **4/4 통과**, `npm run build`도 리팩터링 이후 동일 결과(동작 변경 없는 순수 리팩터링).
+
+**프로덕션 검증(간이)**: 로그인 → 발급된 access token의 헤더가 `{"alg":"HS256","typ":"JWT"}`인지 확인 → 그 토큰으로 보호된 엔드포인트(`GET /promotions`) 호출 시 200 확인. JWT 서명/검증에 알고리즘을 명시적으로 고정한 뒤에도 로그인·인증 흐름이 정상 동작함을 확인했다(별도 UI 변경이 없는 라운드라 Playwright 전체 시나리오는 생략, curl 기반 스모크 체크로 충분). 신규 버그 없음, 테스트 데이터 생성 없어 정리 불필요.
